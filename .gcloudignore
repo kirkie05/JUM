@@ -1,0 +1,7 @@
+.dart_tool/
+.git/
+.github/
+android/
+ios/
+lib/
+test/
