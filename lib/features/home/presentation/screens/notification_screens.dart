@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_card.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -50,99 +47,111 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => context.pop(),
+        ),
         title: const Text(
           'Notifications',
           style: TextStyle(
-            fontFamily: AppTextStyles.fontFamily,
-            fontWeight: FontWeight.w600,
-            fontSize: 18.0,
-            color: AppColors.textPrimary,
+            fontFamily: 'Inter',
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+            letterSpacing: -0.5,
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20, color: AppColors.textPrimary),
-          onPressed: () => context.pop(),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFFF3F4F6),
+            height: 1.0,
+          ),
         ),
         actions: [
           if (_notifications.isNotEmpty)
             TextButton(
               onPressed: _clearAll,
               child: const Text(
-                'Clear All',
+                'CLEAR ALL',
                 style: TextStyle(
-                  fontFamily: AppTextStyles.fontFamily,
-                  fontSize: 14.0,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.textPrimary,
+                  fontFamily: 'Inter',
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                  letterSpacing: 1.0,
                 ),
               ),
             ),
         ],
       ),
-      body: SafeArea(
-        child: _notifications.isEmpty
-            ? _buildEmptyState()
-            : ListView.builder(
-                padding: const EdgeInsets.all(AppSizes.paddingMd),
-                itemCount: _notifications.length,
-                itemBuilder: (context, index) {
-                  final notification = _notifications[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: JumCard(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildIconContainer(notification['icon']!),
-                          const Gap(16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        notification['title']!,
-                                        style: AppTextStyles.bodyMedium.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: AppColors.textPrimary,
-                                        ),
+      body: _notifications.isEmpty
+          ? _buildEmptyState()
+          : ListView.builder(
+              padding: const EdgeInsets.all(24.0),
+              itemCount: _notifications.length,
+              itemBuilder: (context, index) {
+                final notification = _notifications[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: JumCard(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildIconContainer(notification['icon']!),
+                        const Gap(16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      notification['title']!,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 16.0,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
                                       ),
                                     ),
-                                    Text(
-                                      notification['time']!,
-                                      style: AppTextStyles.caption.copyWith(
-                                        fontSize: 11.0,
-                                        color: AppColors.textMuted,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const Gap(6),
-                                Text(
-                                  notification['body']!,
-                                  style: AppTextStyles.body.copyWith(
-                                    fontSize: 13.5,
-                                    height: 1.4,
-                                    color: AppColors.textSecondary,
                                   ),
+                                  Text(
+                                    notification['time']!,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 12.0,
+                                      color: Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const Gap(6),
+                              Text(
+                                notification['body']!,
+                                style: const TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 14.0,
+                                  height: 1.4,
+                                  color: Color(0xFF4B5563),
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  );
-                },
-              ),
-      ),
+                  ),
+                );
+              },
+            ),
     );
   }
 
@@ -150,7 +159,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     IconData iconData;
     switch (iconType) {
       case 'play':
-        iconData = Icons.play_circle_fill;
+        iconData = Icons.play_circle_fill_outlined;
         break;
       case 'church':
         iconData = Icons.church_outlined;
@@ -168,11 +177,11 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Container(
       height: 40,
       width: 40,
-      decoration: BoxDecoration(
-        color: AppColors.surface2,
+      decoration: const BoxDecoration(
+        color: Color(0xFFF3F4F6),
         shape: BoxShape.circle,
       ),
-      child: Icon(iconData, size: 20, color: AppColors.primary),
+      child: Icon(iconData, size: 20, color: Colors.black),
     );
   }
 
@@ -180,21 +189,25 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.notifications_off_outlined, size: 48, color: AppColors.textMuted),
-          const Gap(12),
+        children: const [
+          Icon(Icons.notifications_off_outlined, size: 48, color: Color(0xFF9CA3AF)),
+          Gap(12),
           Text(
             'All caught up!',
-            style: AppTextStyles.bodyMedium.copyWith(
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16.0,
               fontWeight: FontWeight.bold,
-              color: AppColors.textSecondary,
+              color: Colors.black,
             ),
           ),
-          const Gap(4),
+          Gap(4),
           Text(
             'You have no new notifications.',
-            style: AppTextStyles.caption.copyWith(
-              color: AppColors.textMuted,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 14.0,
+              color: Color(0xFF9CA3AF),
             ),
           ),
         ],

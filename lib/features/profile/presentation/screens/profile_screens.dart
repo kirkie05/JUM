@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/jum_avatar.dart';
 import '../../../../shared/widgets/jum_card.dart';
 
 // -------------------------------------------------------------
@@ -23,55 +19,91 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
-        title: Text(
-          'My Profile',
-          style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
-        ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
         elevation: 0,
+        title: const Text(
+          'My Profile',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.black,
+            letterSpacing: -0.5,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFFF3F4F6),
+            height: 1.0,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(AppSizes.paddingLg),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // USER CARD
             JumCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.paddingLg),
-                child: Column(
-                  children: [
-                    const JumAvatar(
-                      initials: 'JD',
-                      size: 80.0,
-                    ),
-                    const Gap(16),
-                    Text(
-                      'John Doe',
-                      style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                    ),
-                    const Gap(4),
-                    Text(
-                      'john.doe@example.com',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                    ),
-                    const Gap(12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryLight.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: AppColors.accent.withOpacity(0.4), width: 1.0),
-                      ),
-                      child: Text(
-                        'Kingdom Partner',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(40.0),
+                    child: Image.network(
+                      'https://lh3.googleusercontent.com/aida-public/AB6AXuA2R0xtoVk7LZ762kWYKIk03hx_eCInPWYeRk_2RGMkBlHHsevyCSHI6wLUaiT3sqyCPYOEt5gRUfeiCzxD6n0EcSqTHCrzrzqK8uhGtBdVRt3k6SVPV7pq1U_O9lz7CrEYb0u9mTsMnowpeNf6tbXzG8GpAvDp5fFKRYoqRrv358yC-vnAE5rRafIG3v4bGiUAVXinsHJvuBsWjf4Imo9nKzaTZYf08-lGYj5nMgAo-5dUyaaCprEAKzbHuTsTr2jcnO7g_K7KEg',
+                      width: 80.0,
+                      height: 80.0,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => const CircleAvatar(
+                        radius: 40.0,
+                        backgroundColor: Color(0xFFEEEEEE),
+                        child: Icon(Icons.person, size: 40.0, color: Colors.black),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const Gap(16),
+                  const Text(
+                    'Emmanuel Adebayo',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 20.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                  const Gap(4),
+                  const Text(
+                    'emmanuel.adebayo@jum.org',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14.0,
+                      color: Color(0xFF6B7280),
+                    ),
+                  ),
+                  const Gap(16),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(20.0),
+                      border: Border.all(color: const Color(0xFFE5E7EB), width: 1.0),
+                    ),
+                    child: const Text(
+                      'KINGDOM PARTNER',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 10.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const Gap(24),
@@ -91,39 +123,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ],
             ),
-            const Gap(24),
-            Text(
+            const Gap(32),
+            const Text(
               'Account Options',
-              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 18.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
+              ),
             ),
-            const Gap(12),
+            const Gap(16),
             // OPTIONS LIST
             JumCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.paddingMd),
-                child: Column(
-                  children: [
-                    _buildOptionRow(Icons.person_outline, 'Personal Information', () {}),
-                    const Divider(color: AppColors.border, height: 24),
-                    SwitchListTile(
-                      value: _pushNotifications,
-                      onChanged: (val) => setState(() => _pushNotifications = val),
-                      title: Text(
-                        'Push Notifications',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  _buildOptionRow(Icons.person_outline, 'Personal Information', () {}),
+                  const Divider(color: Color(0xFFF3F4F6), height: 16),
+                  SwitchListTile(
+                    value: _pushNotifications,
+                    onChanged: (val) => setState(() => _pushNotifications = val),
+                    title: const Text(
+                      'Push Notifications',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 15.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
                       ),
-                      activeColor: AppColors.accent,
-                      contentPadding: EdgeInsets.zero,
-                      secondary: const Icon(Icons.notifications_outlined, color: AppColors.accent),
                     ),
-                    const Divider(color: AppColors.border, height: 24),
-                    _buildOptionRow(Icons.help_outline, 'Help & Support', () {}),
-                    const Divider(color: AppColors.border, height: 24),
-                    _buildOptionRow(Icons.security, 'Privacy Policy', () {}),
-                    const Divider(color: AppColors.border, height: 24),
-                    _buildOptionRow(Icons.logout, 'Sign Out', () => context.go('/sign-in'), isDestructive: true),
-                  ],
-                ),
+                    activeColor: Colors.black,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    secondary: const Icon(Icons.notifications_outlined, color: Colors.black),
+                  ),
+                  const Divider(color: Color(0xFFF3F4F6), height: 16),
+                  _buildOptionRow(Icons.help_outline, 'Help & Support', () {}),
+                  const Divider(color: Color(0xFFF3F4F6), height: 16),
+                  _buildOptionRow(Icons.security, 'Privacy Policy', () {}),
+                  const Divider(color: Color(0xFFF3F4F6), height: 16),
+                  _buildOptionRow(Icons.logout, 'Sign Out', () => context.go('/sign-in'), isDestructive: true),
+                ],
               ),
             ),
           ],
@@ -134,21 +174,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildStatItem(String val, String label) {
     return JumCard(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingMd),
-        child: Column(
-          children: [
-            Text(
-              val,
-              style: AppTextStyles.h2.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold),
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          Text(
+            val,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 24.0,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
             ),
-            const Gap(4),
-            Text(
-              label,
-              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+          ),
+          const Gap(4),
+          Text(
+            label,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12.0,
+              color: Color(0xFF6B7280),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -157,22 +204,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return InkWell(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4.0),
+        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           children: [
-            Icon(icon, color: isDestructive ? AppColors.error : AppColors.accent),
+            Icon(icon, color: isDestructive ? Colors.redAccent : Colors.black),
             const Gap(16),
             Expanded(
               child: Text(
                 title,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isDestructive ? AppColors.error : AppColors.textPrimary,
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15.0,
+                  color: isDestructive ? Colors.redAccent : Colors.black,
                   fontWeight: FontWeight.bold,
                 ),
               ),
             ),
             if (!isDestructive)
-              const Icon(Icons.arrow_forward_ios, size: 14, color: AppColors.textMuted),
+              const Icon(Icons.chevron_right, size: 20.0, color: Color(0xFFD1D5DB)),
           ],
         ),
       ),

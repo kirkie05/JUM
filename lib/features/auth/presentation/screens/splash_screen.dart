@@ -31,7 +31,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     try {
       final clerkUser = clerk.Clerk.instance.currentUser;
       if (clerkUser == null) {
-        context.go('/sign-in');
+        context.go('/welcome');
         return;
       }
 
@@ -51,78 +51,137 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     } catch (e) {
       // Safe fallback in case Clerk is not fully initialized or configured
       debugPrint("Auth splash check failed: $e");
-      context.go('/sign-in');
+      context.go('/welcome');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return GlassMeshBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24.0),
-                  border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
-                  color: Colors.white.withOpacity(0.06),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.15),
-                      blurRadius: 30,
-                      spreadRadius: 5,
+    return Scaffold(
+      backgroundColor: const Color(0xFF000000), // Pure Black as per Stitch body bg-primary
+      body: Stack(
+        children: [
+          // Subtle Ambient Background Texture with glowing dark mesh gradient
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.15,
+              child: Image.network(
+                'https://lh3.googleusercontent.com/aida-public/AB6AXuCRj4Hu3vLgycQ27Br_a0ikX-p_nMHUl3frmSd01v4_2iwiHOvxYIubUTivhWvAJ0eEkht4ova0-ai2HypDZU4U4Wh9--KJKJti56or_yL1OxAOa-3A5XosJljSR0bQrDNst70BZrRsfgx_qyN6KGuIKT4cwd-1cGnV2N2_TzeYN342J8jYA7duhcXQo30PtzrtGNimd-_xMF0Nm1XKAh9g5OeGZhI06ebXQJ--McjUN1_u1LJQfypk214gRwjY0aArlg55NRPH4Q',
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Color(0xFF090C15), Color(0xFF1E1B4B), Color(0xFF000000)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                  ],
+                  ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'JUM',
-                      style: AppTextStyles.h1.copyWith(
-                        color: Colors.white,
-                        fontSize: 52.0,
-                        letterSpacing: 3.0,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    const Gap(8),
-                    Container(
-                      height: 2,
-                      width: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.primary,
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                  ],
-                ),
-              ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.85, 0.85)),
-              const Gap(24),
-              Text(
-                'Jesus Unhindered Ministry',
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: AppColors.textPrimary,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.5,
-                ),
-              ).animate(delay: 300.ms).fadeIn(duration: 800.ms).slideY(begin: 0.2),
-              const Gap(8),
-              Text(
-                'Unleashing Faith Without Boundaries',
-                style: AppTextStyles.bodySmall.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ).animate(delay: 600.ms).fadeIn(duration: 800.ms).slideY(begin: 0.2),
-            ],
+              ),
+            ),
           ),
-        ),
+          
+          // Central Identity Cluster
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // JUM Logo
+                Text(
+                  'JUM',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 64.0,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    letterSpacing: -2.0,
+                  ),
+                ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.95, 0.95)),
+                
+                const Gap(8),
+                
+                // Subtitle
+                Text(
+                  'JESUS UNHINDERED MINISTRY',
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14.0,
+                    fontWeight: FontWeight.w400,
+                    color: Color(0xFF9CA3AF), // gray-400
+                    letterSpacing: 3.0,
+                  ),
+                ).animate(delay: 200.ms).fadeIn(duration: 800.ms).slideY(begin: 0.1),
+                
+                const Gap(32),
+                
+                // Shimmer Loading Line
+                Container(
+                  width: 48,
+                  height: 1.5,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(1),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Stack(
+                    children: [
+                      AnimatedBuilder(
+                        animation: const AlwaysStoppedAnimation(0),
+                        builder: (context, child) {
+                          return Container(
+                            width: 24,
+                            height: 1.5,
+                            color: Colors.white.withOpacity(0.6),
+                          );
+                        },
+                      ).animate(onPlay: (controller) => controller.repeat())
+                       .moveX(
+                         begin: -24,
+                         end: 48,
+                         duration: 1500.ms,
+                         curve: Curves.easeInOut,
+                       ),
+                    ],
+                  ),
+                ).animate(delay: 400.ms).fadeIn(duration: 800.ms),
+                
+                const Gap(16),
+                
+                // Loader Tagline
+                Text(
+                  'GRACE & PEACE',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 10.0,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.4),
+                    letterSpacing: 2.0,
+                  ),
+                ).animate(delay: 600.ms).fadeIn(duration: 800.ms),
+              ],
+            ),
+          ),
+          
+          // Footnote / Versioning
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.bottomAt(24.0) ?? const EdgeInsets.bottomRect(24.0) ?? const EdgeInsets.only(bottom: 24.0),
+              child: Text(
+                '© 2024 JUM GLOBAL',
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 12.0,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF4B5563), // gray-600
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ).animate(delay: 800.ms).fadeIn(duration: 800.ms),
+          ),
+        ],
       ),
     );
   }
 }
+

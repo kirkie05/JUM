@@ -98,137 +98,236 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return GlassMeshBackground(
-      child: Scaffold(
-        backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSizes.paddingXl),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 420.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Center(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16.0),
-                          border: Border.all(color: Colors.white.withOpacity(0.12), width: 1.5),
-                          color: Colors.white.withOpacity(0.06),
-                        ),
-                        child: Text(
-                          'JUM',
-                          style: AppTextStyles.h2.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 24.0,
-                            letterSpacing: 2.0,
-                          ),
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF9FAFB), // Surface Grey as per DESIGN.md
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24.0),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 420.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Branding Header
+                  Column(
+                    children: [
+                      const Text(
+                        'JUM',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 32.0,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF000000),
+                          letterSpacing: -1.5,
                         ),
                       ),
-                    ),
-                    const Gap(32),
-                    Text(
-                      'Welcome back',
-                      style: AppTextStyles.h1.copyWith(color: AppColors.textPrimary),
-                      textAlign: TextAlign.center,
-                    ),
-                    const Gap(8),
-                    Text(
-                      'Sign in to continue your journey',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                      textAlign: TextAlign.center,
-                    ),
-                    const Gap(32),
-                    
-                    // Clerk SDK Sign-In Widget using premium JumCard
-                    JumCard(
-                      padding: const EdgeInsets.all(AppSizes.paddingLg),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (!_codeSent) ...[
-                            JumTextField(
-                              label: 'Email Address',
-                              hint: 'email@example.com',
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              prefix: const Icon(Icons.email_outlined, color: AppColors.textMuted),
-                            ),
-                            const Gap(16),
-                            JumButton(
-                              label: 'Send Verification Code',
-                              isLoading: _isLoading,
-                              isFullWidth: true,
-                              onPressed: _sendOtp,
-                            ),
-                          ] else ...[
-                            Text(
-                              'Enter the 6-digit code sent to ${_emailController.text}',
-                              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                              textAlign: TextAlign.center,
-                            ),
-                            const Gap(16),
-                            JumTextField(
-                              label: 'Verification Code',
-                              hint: '123456',
-                              controller: _otpController,
-                              keyboardType: TextInputType.number,
-                              prefix: const Icon(Icons.lock_outline_rounded, color: AppColors.textMuted),
-                            ),
-                            const Gap(16),
-                            JumButton(
-                              label: 'Verify & Sign In',
-                              isLoading: _isLoading,
-                              isFullWidth: true,
-                              onPressed: _verifyOtp,
-                            ),
-                            const Gap(8),
-                            TextButton(
-                              onPressed: () => setState(() => _codeSent = false),
-                              child: const Text(
-                                'Change Email',
-                                style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+                      const Gap(4),
+                      const Text(
+                        'Sign in to your spiritual community',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 16.0,
+                          color: Color(0xFF6B7280), // Neutral Grey
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const Gap(32),
+                  
+                  // Login Card Container
+                  JumCard(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        if (!_codeSent) ...[
+                          JumTextField(
+                            label: 'EMAIL ADDRESS',
+                            hint: 'name@example.com',
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            prefix: const Icon(Icons.email_outlined, color: Color(0xFF9CA3AF)),
+                          ),
+                          const Gap(24),
+                          ElevatedButton(
+                            onPressed: _sendOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF000000), // Primary Black
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
                               ),
                             ),
-                          ],
-                          if (_errorMessage != null) ...[
-                            const Gap(12),
-                            Text(
-                              _errorMessage!,
-                              style: AppTextStyles.caption.copyWith(color: AppColors.error),
-                              textAlign: TextAlign.center,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20.0,
+                                    height: 20.0,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.0,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Send Verification Code',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ] else ...[
+                          Text(
+                            'Enter the 6-digit code sent to ${_emailController.text}',
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14.0,
+                              color: Color(0xFF6B7280),
                             ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    
-                    const Gap(24),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          "Don't have an account? ",
-                          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                        ),
-                        TextButton(
-                          onPressed: () => context.go('/sign-up'),
-                          child: Text(
-                            'Sign up',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
+                            textAlign: TextAlign.center,
+                          ),
+                          const Gap(24),
+                          JumTextField(
+                            label: 'VERIFICATION CODE',
+                            hint: '••••••',
+                            controller: _otpController,
+                            keyboardType: TextInputType.number,
+                            prefix: const Icon(Icons.lock_outline_rounded, color: Color(0xFF9CA3AF)),
+                          ),
+                          const Gap(24),
+                          ElevatedButton(
+                            onPressed: _verifyOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF000000),
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 20.0,
+                                    height: 20.0,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.0,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Text(
+                                    'Verify & Sign In',
+                                    style: TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 16.0,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                          const Gap(12),
+                          TextButton(
+                            onPressed: () => setState(() => _codeSent = false),
+                            child: const Text(
+                              'Change Email',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                color: Color(0xFF000000),
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
+                        
+                        if (_errorMessage != null) ...[
+                          const Gap(16),
+                          Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12.0,
+                              color: Colors.red,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ],
                     ),
-                  ],
-                ),
+                  ),
+                  
+                  const Gap(24),
+                  
+                  // Join JUM Footer Link
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Text(
+                        "Don't have an account? ",
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14.0,
+                          color: Color(0xFF6B7280),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () => context.go('/sign-up'),
+                        child: const Text(
+                          'Join JUM',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14.0,
+                            color: Color(0xFF000000),
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const Gap(24),
+                  
+                  // Secure Login indicators
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Row(
+                        children: const [
+                          Icon(Icons.verified_user_outlined, size: 16.0, color: Color(0xFF9CA3AF)),
+                          Gap(4),
+                          Text(
+                            'Secure Login',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12.0,
+                              color: Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const Gap(24),
+                      Row(
+                        children: const [
+                          Icon(Icons.auto_stories_outlined, size: 16.0, color: Color(0xFF9CA3AF)),
+                          Gap(4),
+                          Text(
+                            'Grace & Peace',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12.0,
+                              color: Color(0xFF9CA3AF),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),

@@ -6,7 +6,11 @@ import '../constants/app_colors.dart';
 import '../constants/app_sizes.dart';
 
 // Import high-fidelity presentation screens
-import '../../features/auth/presentation/screens/auth_screens.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
+import '../../features/auth/presentation/screens/welcome_screen.dart';
+import '../../features/auth/presentation/screens/sign_in_screen.dart';
+import '../../features/auth/presentation/screens/sign_up_screen.dart';
+import '../../features/auth/presentation/screens/auth_screens.dart' show OnboardingScreen, ChurchSelectScreen;
 import '../../features/home/presentation/screens/home_screens.dart';
 import '../../features/home/presentation/screens/search_screens.dart';
 import '../../features/home/presentation/screens/notification_screens.dart';
@@ -31,6 +35,10 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/',
       builder: (context, state) => const SplashScreen(),
+    ),
+    GoRoute(
+      path: '/welcome',
+      builder: (context, state) => const WelcomeScreen(),
     ),
     GoRoute(
       path: '/onboarding',
