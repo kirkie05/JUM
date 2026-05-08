@@ -8,6 +8,8 @@ import '../constants/app_sizes.dart';
 // Import high-fidelity presentation screens
 import '../../features/auth/presentation/screens/auth_screens.dart';
 import '../../features/home/presentation/screens/home_screens.dart';
+import '../../features/home/presentation/screens/search_screens.dart';
+import '../../features/home/presentation/screens/notification_screens.dart';
 import '../../features/community/presentation/screens/community_screens.dart';
 import '../../features/sermons/presentation/screens/sermon_screens.dart';
 import '../../features/giving/presentation/screens/giving_screens.dart';
@@ -18,6 +20,7 @@ import '../../features/messaging/presentation/screens/messaging_screens.dart';
 import '../../features/marketplace/presentation/screens/marketplace_screens.dart';
 import '../../features/profile/presentation/screens/profile_screens.dart';
 import '../../features/admin/presentation/screens/admin_screens.dart';
+import '../../features/forms/presentation/screens/form_screens.dart';
 import '../../features/live/presentation/screens/live_stream_screen.dart';
 import '../../features/live/presentation/screens/live_watch_screen.dart';
 
@@ -167,6 +170,25 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/giving/receipt/:id',
       builder: (context, state) => PlaceholderScreen(title: 'Receipt Screen: ${state.pathParameters['id']}'),
+    ),
+    GoRoute(
+      path: '/forms',
+      builder: (context, state) => const GenericFormScreen(),
+    ),
+    GoRoute(
+      path: '/forms/success',
+      builder: (context, state) {
+        final id = state.uri.queryParameters['id'] ?? 'JUM-00000';
+        return SubmissionSuccessScreen(referenceId: id);
+      },
+    ),
+    GoRoute(
+      path: '/search',
+      builder: (context, state) => const GlobalSearchScreen(),
+    ),
+    GoRoute(
+      path: '/notifications',
+      builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
       path: '/marketplace',

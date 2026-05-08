@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
 import '../../core/constants/app_text_styles.dart';
@@ -35,6 +36,38 @@ class JumAppShell extends StatelessWidget {
 
   Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: const Text(
+          'JUM',
+          style: TextStyle(
+            fontFamily: AppTextStyles.fontFamily,
+            fontWeight: FontWeight.bold,
+            fontSize: 20.0,
+            letterSpacing: 1.5,
+            color: AppColors.textPrimary,
+          ),
+        ),
+        centerTitle: false,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search, color: AppColors.textPrimary, size: 22),
+            onPressed: () => context.push('/search'),
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 22),
+            onPressed: () => context.push('/notifications'),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0, left: 8.0),
+            child: GestureDetector(
+              onTap: () => context.push('/profile'),
+              child: const JumAvatar(initials: 'JM', size: 30),
+            ),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(child: child),

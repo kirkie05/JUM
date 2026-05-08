@@ -50,18 +50,18 @@ class HomeScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _getGreeting(),
-                                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-                              ),
-                              const Gap(4),
-                              Text(
-                                'John Doe',
+                                'Grace & Peace, JUM Member',
                                 style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                              ),
+                              const Gap(6),
+                              Text(
+                                'May your day be filled with intentional reflection.',
+                                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
                               ),
                             ],
                           ),
                           const JumAvatar(
-                            initials: 'JD',
+                            initials: 'JM',
                             size: AppSizes.avatarMd,
                           ),
                         ],
@@ -74,15 +74,15 @@ class HomeScreen extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(Icons.church, color: AppColors.primary, size: 20),
+                              const Icon(Icons.church_outlined, color: AppColors.primary, size: 20),
                               const Gap(8),
                               Text(
-                                'JUM Lagos Headquarters',
+                                'JUM Headquarters',
                                 style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
                               ),
                             ],
                           ),
-                          const Icon(Icons.verified, color: AppColors.primary, size: 20),
+                          const Icon(Icons.verified_outlined, color: AppColors.primary, size: 20),
                         ],
                       ),
                     ],
@@ -189,16 +189,16 @@ class HomeScreen extends StatelessWidget {
                     itemCount: 4,
                     itemBuilder: (context, index) {
                       final titles = [
+                        'The Path of Silence',
                         'Living Unhindered',
                         'The Kingdom Economy',
                         'Power of Faith',
-                        'Grace Abundant',
                       ];
                       final speakers = [
+                        'Rev. Elijah Thorne',
                         'Pastor Kingsley',
                         'Apostle David',
                         'Dr. Faith',
-                        'Pastor Kingsley',
                       ];
                       return Container(
                         width: 140,
@@ -242,12 +242,12 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const Gap(24),
 
-                // 4. COMMUNITY PREVIEW
+                // 4. COMMUNITY PREVIEW / HIGHLIGHTS
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'COMMUNITY',
+                      'COMMUNITY HIGHLIGHTS',
                       style: AppTextStyles.caption.copyWith(color: AppColors.accent, fontWeight: FontWeight.bold, letterSpacing: 1.5),
                     ),
                     TextButton(
@@ -262,12 +262,13 @@ class HomeScreen extends StatelessWidget {
                 const Gap(8),
                 Column(
                   children: List.generate(2, (index) {
-                    final authors = ['Pastor Kingsley', 'Sarah Jenkins'];
-                    final times = ['2 hours ago', 'Yesterday'];
+                    final titles = ['New Reading Plan', 'Holiday Outreach'];
+                    final times = ['Active', 'Active'];
                     final contents = [
-                      'Great service today! Truly inspired by the congregation\'s heart for worship. Let\'s keep the fire burning!',
-                      'Is anyone attending the prayer session tonight? Looking forward to fellowship.',
+                      'Join 240 others in “The Wisdom of Ecclesiastes” 10-day journey.',
+                      'Volunteer spots are now open for the Annual Winter Soup Kitchen.',
                     ];
+                    final icons = [Icons.menu_book_outlined, Icons.volunteer_activism_outlined];
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.paddingSm),
                       child: JumCard(
@@ -278,19 +279,23 @@ class HomeScreen extends StatelessWidget {
                             children: [
                               Row(
                                 children: [
-                                  JumAvatar(initials: authors[index].substring(0, 2)),
+                                  CircleAvatar(
+                                    backgroundColor: AppColors.surface2,
+                                    radius: 18,
+                                    child: Icon(icons[index], size: 16, color: AppColors.primary),
+                                  ),
                                   const Gap(12),
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          authors[index],
+                                          titles[index],
                                           style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
                                         ),
                                         Text(
                                           times[index],
-                                          style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
+                                          style: AppTextStyles.caption.copyWith(color: AppColors.textMuted, fontSize: 11.0),
                                         ),
                                       ],
                                     ),
@@ -300,7 +305,7 @@ class HomeScreen extends StatelessWidget {
                               const Gap(12),
                               Text(
                                 contents[index],
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontSize: 13.5),
                                 maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
                               ),
