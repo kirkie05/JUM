@@ -20,6 +20,7 @@ class JumButton extends StatelessWidget {
     this.isFullWidth = false,
     this.variant = JumButtonVariant.primary,
   }) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     Widget buttonChild = isLoading
@@ -28,7 +29,7 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
             ),
           )
         : Text(
@@ -45,23 +46,25 @@ class JumButton extends StatelessWidget {
       case JumButtonVariant.primary:
         style = ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
+          foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
+          shadowColor: AppColors.primary.withOpacity(0.3),
         );
         break;
       case JumButtonVariant.secondary:
         style = OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.textSecondary, width: 1.0),
+          side: const BorderSide(color: AppColors.glassBorder, width: 1.0),
           foregroundColor: AppColors.textPrimary,
+          backgroundColor: AppColors.glassBg,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
         ).copyWith(
-          overlayColor: WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
+          overlayColor: WidgetStateProperty.all(Colors.white.withOpacity(0.05)),
         );
         if (isLoading) {
           buttonChild = const SizedBox(
@@ -69,7 +72,7 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           );
         }

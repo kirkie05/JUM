@@ -17,7 +17,7 @@ class AppTheme {
     ),
     fontFamily: AppTextStyles.fontFamily,
     appBarTheme: const AppBarTheme(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.transparent,
       elevation: 0,
       centerTitle: true,
       iconTheme: IconThemeData(color: AppColors.textPrimary),
@@ -29,7 +29,7 @@ class AppTheme {
       ),
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.transparent,
       selectedItemColor: AppColors.primary,
       unselectedItemColor: AppColors.textSecondary,
       type: BottomNavigationBarType.fixed,
@@ -53,7 +53,8 @@ class AppTheme {
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
-        side: const BorderSide(color: AppColors.textSecondary, width: 1.0),
+        side: const BorderSide(color: AppColors.accent, width: 1.0),
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.textPrimary,
         minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(
@@ -106,5 +107,5 @@ class AppTheme {
     dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
   );
 
-  static ThemeData get dark => light; // Fallback to light to strictly enforce Unhindered identity
+  static ThemeData get dark => light;
 }
