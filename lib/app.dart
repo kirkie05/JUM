@@ -11,7 +11,7 @@ class JumApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'JUM - Jesus Unhindered Ministry',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
       routerConfig: appRouter,
     );
   }

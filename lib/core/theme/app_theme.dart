@@ -4,14 +4,15 @@ import '../constants/app_text_styles.dart';
 import '../constants/app_sizes.dart';
 
 class AppTheme {
-  static ThemeData get dark => ThemeData(
+  static ThemeData get light => ThemeData(
     useMaterial3: true,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.background,
-    colorScheme: const ColorScheme.dark(
+    colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
-      secondary: AppColors.accent,
+      secondary: AppColors.textSecondary,
       surface: AppColors.surface,
+      onSurface: AppColors.textPrimary,
       error: AppColors.error,
     ),
     fontFamily: AppTextStyles.fontFamily,
@@ -29,19 +30,36 @@ class AppTheme {
     ),
     bottomNavigationBarTheme: const BottomNavigationBarThemeData(
       backgroundColor: AppColors.surface,
-      selectedItemColor: AppColors.accent,
-      unselectedItemColor: AppColors.textMuted,
+      selectedItemColor: AppColors.primary,
+      unselectedItemColor: AppColors.textSecondary,
       type: BottomNavigationBarType.fixed,
       elevation: 0,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
-        backgroundColor: AppColors.accent,
-        foregroundColor: const Color(0xFF0A0A0A),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
         minimumSize: const Size(double.infinity, 52),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         ),
+        elevation: 0,
+        textStyle: const TextStyle(
+          fontFamily: AppTextStyles.fontFamily,
+          fontSize: 14.0,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        side: const BorderSide(color: AppColors.textSecondary, width: 1.0),
+        foregroundColor: AppColors.textPrimary,
+        minimumSize: const Size(double.infinity, 52),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+        ),
+        elevation: 0,
         textStyle: const TextStyle(
           fontFamily: AppTextStyles.fontFamily,
           fontSize: 14.0,
@@ -51,7 +69,7 @@ class AppTheme {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surface2,
+      fillColor: AppColors.surface,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
         borderSide: const BorderSide(color: AppColors.border),
@@ -62,7 +80,7 @@ class AppTheme {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       labelStyle: const TextStyle(
         fontFamily: AppTextStyles.fontFamily,
@@ -82,9 +100,11 @@ class AppTheme {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        side: const BorderSide(color: AppColors.border, width: 0.5),
+        side: const BorderSide(color: AppColors.border, width: 1.0),
       ),
     ),
     dividerTheme: const DividerThemeData(color: AppColors.divider, thickness: 1),
   );
+
+  static ThemeData get dark => light; // Fallback to light to strictly enforce Unhindered identity
 }

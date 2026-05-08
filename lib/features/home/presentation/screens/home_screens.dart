@@ -36,63 +36,56 @@ class HomeScreen extends StatelessWidget {
               delegate: SliverChildListDelegate([
                 // 1. WELCOME BANNER
                 JumCard(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppColors.primary, AppColors.primaryLight],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                  backgroundColor: AppColors.surface,
+                  borderColor: AppColors.border,
+                  borderWidth: 1.0,
+                  padding: const EdgeInsets.all(AppSizes.paddingLg),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _getGreeting(),
+                                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+                              ),
+                              const Gap(4),
+                              Text(
+                                'John Doe',
+                                style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
+                              ),
+                            ],
+                          ),
+                          const JumAvatar(
+                            initials: 'JD',
+                            size: AppSizes.avatarMd,
+                          ),
+                        ],
                       ),
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    ),
-                    padding: const EdgeInsets.all(AppSizes.paddingLg),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _getGreeting(),
-                                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                                ),
-                                const Gap(4),
-                                Text(
-                                  'John Doe',
-                                  style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                                ),
-                              ],
-                            ),
-                            const JumAvatar(
-                              initials: 'JD',
-                              size: AppSizes.avatarMd,
-                            ),
-                          ],
-                        ),
-                        const Gap(16),
-                        const Divider(color: Colors.white24, height: 1),
-                        const Gap(16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.church, color: AppColors.accent, size: 20),
-                                const Gap(8),
-                                Text(
-                                  'JUM Lagos Headquarters',
-                                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                            const Icon(Icons.verified, color: AppColors.accent, size: 20),
-                          ],
-                        ),
-                      ],
-                    ),
+                      const Gap(16),
+                      const Divider(color: AppColors.divider, height: 1),
+                      const Gap(16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.church, color: AppColors.primary, size: 20),
+                              const Gap(8),
+                              Text(
+                                'JUM Lagos Headquarters',
+                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                              ),
+                            ],
+                          ),
+                          const Icon(Icons.verified, color: AppColors.primary, size: 20),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 const Gap(24),

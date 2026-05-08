@@ -28,7 +28,7 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0A0A0A)),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           )
         : Text(
@@ -44,8 +44,9 @@ class JumButton extends StatelessWidget {
     switch (variant) {
       case JumButtonVariant.primary:
         style = ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: const Color(0xFF0A0A0A),
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
@@ -53,30 +54,29 @@ class JumButton extends StatelessWidget {
         break;
       case JumButtonVariant.secondary:
         style = OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.accent, width: 1.5),
-          foregroundColor: AppColors.accent,
+          side: const BorderSide(color: AppColors.textSecondary, width: 1.0),
+          foregroundColor: AppColors.textPrimary,
+          elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
         ).copyWith(
-          // For outlined buttons when loading
-          overlayColor: WidgetStateProperty.all(AppColors.accent.withOpacity(0.1)),
+          overlayColor: WidgetStateProperty.all(AppColors.primary.withOpacity(0.05)),
         );
-        // Replace child progress indicator color for secondary button
         if (isLoading) {
           buttonChild = const SizedBox(
             height: 20,
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           );
         }
         break;
       case JumButtonVariant.ghost:
         style = TextButton.styleFrom(
-          foregroundColor: AppColors.textMuted,
+          foregroundColor: AppColors.textSecondary,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),
           ),
@@ -87,7 +87,7 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textMuted),
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textSecondary),
             ),
           );
         }
