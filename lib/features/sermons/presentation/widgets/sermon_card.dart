@@ -2,10 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gap/gap.dart';
-
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../data/models/sermon_model.dart';
 
@@ -40,8 +36,8 @@ class SermonCard extends StatelessWidget {
           // Thumbnail section with badge and icon overlays
           ClipRRect(
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(AppSizes.radiusLg),
-              topRight: Radius.circular(AppSizes.radiusLg),
+              topLeft: Radius.circular(16.0),
+              topRight: Radius.circular(16.0),
             ),
             child: Stack(
               children: [
@@ -52,33 +48,34 @@ class SermonCard extends StatelessWidget {
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Container(
                     height: 110,
-                    color: AppColors.surface2,
+                    color: const Color(0xFF1F1F1F),
                     child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                     ),
                   ),
                   errorWidget: (context, url, error) => Container(
                     height: 110,
-                    color: AppColors.surface2,
+                    color: const Color(0xFF1F1F1F),
                     child: const Center(
-                      child: Icon(Icons.broken_image, color: AppColors.textMuted),
+                      child: Icon(Icons.movie_creation_outlined, color: Color(0xFF8E8E8E)),
                     ),
                   ),
                 ),
                 // Center icon overlay
                 Positioned.fill(
                   child: Container(
-                    color: Colors.black.withOpacity(0.15),
+                    color: Colors.black.withOpacity(0.2),
                     child: Center(
                       child: Container(
                         padding: const EdgeInsets.all(8),
                         decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
+                          color: Colors.black.withOpacity(0.6),
                           shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white.withOpacity(0.2), width: 1.0),
                         ),
                         child: Icon(
                           sermon.type == 'video' ? Icons.play_arrow_rounded : Icons.waves_rounded,
-                          color: AppColors.accent,
+                          color: Colors.white,
                           size: 24,
                         ),
                       ),
@@ -92,13 +89,14 @@ class SermonCard extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.75),
+                      color: Colors.black.withOpacity(0.8),
                       borderRadius: BorderRadius.circular(4),
+                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 0.5),
                     ),
                     child: Text(
                       _formatDuration(sermon.durationSeconds),
                       style: const TextStyle(
-                        fontFamily: AppTextStyles.fontFamily,
+                        fontFamily: 'Inter',
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
                         color: Colors.white,
@@ -117,9 +115,11 @@ class SermonCard extends StatelessWidget {
               children: [
                 Text(
                   sermon.title,
-                  style: AppTextStyles.bodyMedium.copyWith(
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 14.0,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
+                    color: Colors.white,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
@@ -127,8 +127,10 @@ class SermonCard extends StatelessWidget {
                 const Gap(4),
                 Text(
                   sermon.speaker,
-                  style: AppTextStyles.caption.copyWith(
-                    color: AppColors.textSecondary,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12.0,
+                    color: Color(0xFF8E8E8E),
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,

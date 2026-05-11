@@ -42,8 +42,10 @@ class JumAppShell extends StatelessWidget {
   Widget _buildMobileLayout(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text(
+      appBar: currentIndex == 1
+          ? null
+          : AppBar(
+              title: const Text(
           'JUM',
           style: TextStyle(
             fontFamily: AppTextStyles.fontFamily,
@@ -113,8 +115,8 @@ class JumAppShell extends StatelessWidget {
                   label: AppStrings.media,
                 ),
                 BottomNavigationBarItem(
-                  icon: Icon(Icons.volunteer_activism),
-                  label: AppStrings.give,
+                  icon: Icon(Icons.menu_book_rounded),
+                  label: AppStrings.bible,
                 ),
                 BottomNavigationBarItem(
                   icon: Icon(Icons.menu),
@@ -162,9 +164,9 @@ class JumAppShell extends StatelessWidget {
                       label: Text(AppStrings.media),
                     ),
                     NavigationRailDestination(
-                      icon: Icon(Icons.volunteer_activism),
-                      selectedIcon: Icon(Icons.volunteer_activism),
-                      label: Text(AppStrings.give),
+                      icon: Icon(Icons.menu_book_rounded),
+                      selectedIcon: Icon(Icons.menu_book_rounded),
+                      label: Text(AppStrings.bible),
                     ),
                     NavigationRailDestination(
                       icon: Icon(Icons.menu),
@@ -228,7 +230,7 @@ class JumAppShell extends StatelessWidget {
                           _buildSidebarTile(0, Icons.home_filled, AppStrings.home),
                           _buildSidebarTile(1, Icons.forum_outlined, AppStrings.community),
                           _buildSidebarTile(2, Icons.play_circle_fill, AppStrings.media),
-                          _buildSidebarTile(3, Icons.volunteer_activism, AppStrings.give),
+                          _buildSidebarTile(3, Icons.menu_book_rounded, AppStrings.bible),
                           _buildSidebarTile(4, Icons.menu, AppStrings.more),
                         ],
                       ),

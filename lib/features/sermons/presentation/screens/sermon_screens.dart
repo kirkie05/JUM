@@ -1,20 +1,20 @@
 import 'package:flutter/material.dart';
 
-import 'sermon_library_screen.dart';
+import '../../../media/presentation/screens/media_library_screen.dart';
 import 'sermon_player_screen.dart';
 
 class SermonListScreen extends StatelessWidget {
-  const SermonListScreen({Key? key}) : super(key: key);
+  const SermonListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const SermonLibraryScreen();
+    return const MediaLibraryScreen();
   }
 }
 
 class SermonDetailScreen extends StatelessWidget {
   final String sermonId;
-  const SermonDetailScreen({Key? key, required this.sermonId}) : super(key: key);
+  const SermonDetailScreen({super.key, required this.sermonId});
 
   @override
   Widget build(BuildContext context) {

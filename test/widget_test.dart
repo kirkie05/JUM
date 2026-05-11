@@ -5,11 +5,8 @@ import 'package:jum/app.dart';
 void main() {
   testWidgets('App initialization smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: JumApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: JumApp()));
+    await tester.pump(const Duration(milliseconds: 1200));
 
     // Verify that our app builds successfully without throwing on the first frame.
     expect(find.byType(JumApp), findsOneWidget);

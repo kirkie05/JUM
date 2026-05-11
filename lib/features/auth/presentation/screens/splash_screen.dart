@@ -25,34 +25,9 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   }
 
   Future<void> _handleNavigation() async {
-    await Future.delayed(const Duration(milliseconds: 2500));
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
-
-    try {
-      final clerkUser = clerk.Clerk.instance.currentUser;
-      if (clerkUser == null) {
-        context.go('/welcome');
-        return;
-      }
-
-      final supabaseUser = await ref
-          .read(authServiceProvider)
-          .fetchCurrentUser(clerkUser.id);
-
-      if (!mounted) return;
-
-      if (supabaseUser == null) {
-        context.go('/onboarding');
-      } else if (supabaseUser.churchId == null || supabaseUser.churchId.isEmpty) {
-        context.go('/church-select');
-      } else {
-        context.go('/home');
-      }
-    } catch (e) {
-      // Safe fallback in case Clerk is not fully initialized or configured
-      debugPrint("Auth splash check failed: $e");
-      context.go('/welcome');
-    }
+    context.go('/home');
   }
 
   @override
@@ -166,7 +141,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: Padding(
-              padding: const EdgeInsets.bottomAt(24.0) ?? const EdgeInsets.bottomRect(24.0) ?? const EdgeInsets.only(bottom: 24.0),
+              padding: const EdgeInsets.only(bottom: 24.0),
               child: Text(
                 '© 2024 JUM GLOBAL',
                 style: const TextStyle(

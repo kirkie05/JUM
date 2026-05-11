@@ -45,7 +45,7 @@ class JumButton extends StatelessWidget {
     switch (variant) {
       case JumButtonVariant.primary:
         style = ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
+          backgroundColor: AppColors.accent,
           foregroundColor: Colors.black,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -55,17 +55,20 @@ class JumButton extends StatelessWidget {
         );
         break;
       case JumButtonVariant.secondary:
-        style = OutlinedButton.styleFrom(
-          side: const BorderSide(color: AppColors.glassBorder, width: 1.0),
-          foregroundColor: AppColors.textPrimary,
-          backgroundColor: AppColors.glassBg,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-          ),
-        ).copyWith(
-          overlayColor: WidgetStateProperty.all(Colors.white.withOpacity(0.05)),
-        );
+        style =
+            OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.glassBorder, width: 1.0),
+              foregroundColor: AppColors.textPrimary,
+              backgroundColor: AppColors.glassBg,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              ),
+            ).copyWith(
+              overlayColor: WidgetStateProperty.all(
+                Colors.white.withOpacity(0.05),
+              ),
+            );
         if (isLoading) {
           buttonChild = const SizedBox(
             height: 20,
@@ -90,7 +93,9 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.textSecondary),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                AppColors.textSecondary,
+              ),
             ),
           );
         }

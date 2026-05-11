@@ -6,25 +6,25 @@ import '../models/lesson_model.dart';
 import '../models/enrollment_model.dart';
 import '../models/quiz_question.dart';
 import '../models/quiz_attempt.dart';
-import '../repositories/school_repository.dart';
+import '../repositories/gospel_army_repository.dart';
 
 final coursesProvider = FutureProvider<List<CourseModel>>((ref) async {
   final churchId = ref.watch(currentUserProvider).value?.churchId ?? 'jum-church-1';
-  return ref.watch(schoolRepositoryProvider).fetchCourses(churchId);
+  return ref.watch(gospelArmyRepositoryProvider).fetchCourses(churchId);
 });
 
 final courseProvider = FutureProvider.family<CourseModel, String>((ref, courseId) async {
-  return ref.watch(schoolRepositoryProvider).fetchCourse(courseId);
+  return ref.watch(gospelArmyRepositoryProvider).fetchCourse(courseId);
 });
 
 final courseLessonsProvider = FutureProvider.family<List<LessonModel>, String>((ref, courseId) async {
-  return ref.watch(schoolRepositoryProvider).fetchLessons(courseId);
+  return ref.watch(gospelArmyRepositoryProvider).fetchLessons(courseId);
 });
 
 final enrollmentProvider = FutureProvider.family<EnrollmentModel?, String>((ref, courseId) async {
   final user = ref.watch(currentUserProvider).value;
   if (user == null) return null;
-  return ref.watch(schoolRepositoryProvider).fetchEnrollment(user.id, courseId);
+  return ref.watch(gospelArmyRepositoryProvider).fetchEnrollment(user.id, courseId);
 });
 
 class LessonPlayerState {
@@ -126,7 +126,7 @@ class LessonPlayerNotifier extends StateNotifier<LessonPlayerState> {
       submittedAt: DateTime.now(),
     );
 
-    await ref.read(schoolRepositoryProvider).submitQuiz(attempt);
+    await ref.read(gospelArmyRepositoryProvider).submitQuiz(attempt);
     state = state.copyWith(quizScore: correctCount);
   }
 
@@ -137,9 +137,9 @@ class LessonPlayerNotifier extends StateNotifier<LessonPlayerState> {
   }) async {
     final int newProgress = ((completedLessonsCount / totalLessonsCount) * 100).toInt();
     if (newProgress >= 100) {
-      await ref.read(schoolRepositoryProvider).markCompleted(enrollmentId);
+      await ref.read(gospelArmyRepositoryProvider).markCompleted(enrollmentId);
     } else {
-      await ref.read(schoolRepositoryProvider).updateProgress(enrollmentId, newProgress);
+      await ref.read(gospelArmyRepositoryProvider).updateProgress(enrollmentId, newProgress);
     }
     state = state.copyWith(currentLessonIndex: state.currentLessonIndex + 1);
   }

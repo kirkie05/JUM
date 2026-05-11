@@ -7,6 +7,7 @@ class AppStrings {
   static const media = 'Media';
   static const give = 'Give';
   static const more = 'More';
+  static const bible = 'Bible';
   static const loading = 'Loading...';
   static const errorGeneric = 'Something went wrong. Please try again.';
   static const retry = 'Retry';

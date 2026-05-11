@@ -17,6 +17,45 @@ class PostCard extends ConsumerWidget {
   
   const PostCard({super.key, required this.post});
 
+  // Helper to parse and build text with highlighted hashtags matching the slothui layout
+  Widget _buildBodyText(String text) {
+    final List<String> words = text.split(' ');
+    final List<InlineSpan> spans = [];
+
+    for (var i = 0; i < words.length; i++) {
+      final word = words[i];
+      final isHashtag = word.startsWith('#');
+      
+      spans.add(
+        TextSpan(
+          text: '$word${i == words.length - 1 ? "" : " "}',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 14,
+            height: 1.5,
+            fontWeight: isHashtag ? FontWeight.w600 : FontWeight.normal,
+            color: isHashtag ? Colors.indigoAccent : AppColors.textPrimary,
+          ),
+        ),
+      );
+    }
+
+    return RichText(
+      text: TextSpan(children: spans),
+    );
+  }
+
+  // Generates a professional community-centric role/title for the subtitle header, matching slothui style
+  String _getUserSubtitle(String? authorName) {
+    if (authorName == null || authorName.isEmpty) return 'Community Member, JUM';
+    final name = authorName.toLowerCase();
+    if (name.contains('joseph') || name.contains('pastor')) return 'Lead Pastor, JUM';
+    if (name.contains('admin')) return 'Church Administrator';
+    if (name.contains('worship') || name.contains('sarah')) return 'Worship Coordinator';
+    if (name.contains('volunteer') || name.contains('david')) return 'Outreach Volunteer';
+    return 'Active Member, JUM';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentUser = ref.watch(currentUserProvider).value;
@@ -27,13 +66,14 @@ class PostCard extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
+          // Header: Avatar, Name, Role, Subtitle, and 3-dot Menu
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               JumAvatar(
                 imageUrl: post.authorAvatarUrl,
                 initials: post.authorName?.isNotEmpty == true ? post.authorName![0] : 'U',
-                size: 40,
+                size: 42,
               ),
               const SizedBox(width: AppSizes.paddingSm),
               Expanded(
@@ -41,7 +81,7 @@ class PostCard extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      post.authorName ?? 'Unknown',
+                      post.authorName ?? 'Unknown Member',
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 14,
@@ -49,12 +89,14 @@ class PostCard extends ConsumerWidget {
                         color: AppColors.textPrimary,
                       ),
                     ),
+                    const SizedBox(height: 2),
                     Text(
-                      timeago.format(post.createdAt),
+                      _getUserSubtitle(post.authorName),
                       style: const TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        color: AppColors.textMuted,
+                        color: AppColors.textSecondary,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -62,7 +104,7 @@ class PostCard extends ConsumerWidget {
               ),
               if (isMyPost)
                 PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_horiz, color: AppColors.textSecondary),
+                  icon: const Icon(Icons.more_horiz_rounded, color: AppColors.textSecondary),
                   onSelected: (value) {
                     if (value == 'delete') {
                       ref.read(communityRepositoryProvider).deletePost(post.id);
@@ -78,28 +120,24 @@ class PostCard extends ConsumerWidget {
                       child: Text('Delete', style: TextStyle(color: Colors.red)),
                     ),
                   ],
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.more_vert_rounded, size: 20, color: AppColors.textMuted),
+                  onPressed: () {},
                 ),
             ],
           ),
           const SizedBox(height: AppSizes.paddingMd),
           
-          // Body
-          Text(
-            post.body,
-            maxLines: 4,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 14,
-              color: AppColors.textPrimary,
-            ),
-          ),
+          // Body content with parsed hashtags
+          _buildBodyText(post.body),
           
-          // Media
+          // Media with Rounded Corners (circular 16) matching slothui
           if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) ...[
             const SizedBox(height: AppSizes.paddingMd),
             ClipRRect(
-              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              borderRadius: BorderRadius.circular(16),
               child: CachedNetworkImage(
                 imageUrl: post.mediaUrl!,
                 fit: BoxFit.cover,
@@ -108,20 +146,22 @@ class PostCard extends ConsumerWidget {
                 placeholder: (context, url) => Container(
                   height: 220,
                   color: AppColors.surface2,
-                  child: const Center(child: CircularProgressIndicator()),
+                  child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
                 ),
                 errorWidget: (context, url, error) => Container(
                   height: 220,
                   color: AppColors.surface2,
-                  child: const Center(child: Icon(Icons.error, color: AppColors.textMuted)),
+                  child: const Center(child: Icon(Icons.error_outline_rounded, color: AppColors.textMuted)),
                 ),
               ),
             ),
           ],
           
           const SizedBox(height: AppSizes.paddingMd),
+          const Divider(height: 1, color: AppColors.divider),
+          const SizedBox(height: 8),
           
-          // Actions
+          // Actions: Like, Comment, Share, Bookmark with Counters
           PostActionsRow(post: post),
         ],
       ),

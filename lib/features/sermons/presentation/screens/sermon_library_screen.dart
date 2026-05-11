@@ -3,9 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 
 import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/jum_app_bar.dart';
 import '../../../../shared/widgets/jum_empty_state.dart';
 import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/sermon_model.dart';
@@ -23,7 +20,7 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
   bool _isSearchExpanded = false;
   final TextEditingController _searchController = TextEditingController();
   String _activeFilter = 'All';
-  final List<String> _filters = ['All', 'Video', 'Audio', 'Series'];
+  final List<String> _filters = ['All', 'Video', 'Audio'];
 
   @override
   void dispose() {
@@ -45,14 +42,24 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: JumAppBar(
-        title: 'Media',
-        showBack: false,
+      appBar: AppBar(
+        backgroundColor: AppColors.background,
+        elevation: 0,
+        title: const Text(
+          'Media Library',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            letterSpacing: -0.5,
+          ),
+        ),
         actions: [
           IconButton(
             icon: Icon(
               _isSearchExpanded ? Icons.search_off : Icons.search,
-              color: AppColors.accent,
+              color: Colors.white,
             ),
             onPressed: () {
               setState(() {
@@ -65,6 +72,13 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
             },
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFF1F1F1F),
+            height: 1.0,
+          ),
+        ),
       ),
       body: Column(
         children: [
@@ -76,24 +90,35 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
             child: _isSearchExpanded
                 ? Padding(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppSizes.paddingLg,
+                      horizontal: 24.0,
                       vertical: 8.0,
                     ),
                     child: TextField(
                       controller: _searchController,
-                      style: const TextStyle(color: AppColors.textPrimary),
+                      style: const TextStyle(color: Colors.white, fontFamily: 'Inter'),
                       decoration: InputDecoration(
                         hintText: 'Search sermons...',
-                        prefixIcon: const Icon(Icons.search, color: AppColors.accent, size: 20),
+                        hintStyle: const TextStyle(color: Color(0xFF8E8E8E), fontFamily: 'Inter'),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white, size: 20),
                         suffixIcon: IconButton(
-                          icon: const Icon(Icons.close, color: AppColors.textMuted, size: 20),
+                          icon: const Icon(Icons.close, color: Color(0xFF8E8E8E), size: 20),
                           onPressed: () {
                             _searchController.clear();
                             ref.read(sermonSearchNotifierProvider.notifier).search('');
                             setState(() => _isSearchExpanded = false);
                           },
                         ),
+                        filled: true,
+                        fillColor: const Color(0xFF1F1F1F),
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.0),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12.0),
+                          borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                        ),
                       ),
                       onChanged: (val) {
                         ref.read(sermonSearchNotifierProvider.notifier).search(val);
@@ -107,8 +132,8 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(
-              horizontal: AppSizes.paddingLg,
-              vertical: AppSizes.paddingSm,
+              horizontal: 24.0,
+              vertical: 12.0,
             ),
             child: Row(
               children: _filters.map((filter) {
@@ -118,13 +143,13 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
                   child: ChoiceChip(
                     label: Text(filter),
                     selected: isSelected,
-                    selectedColor: AppColors.accent,
-                    backgroundColor: AppColors.surface2,
+                    selectedColor: Colors.white,
+                    backgroundColor: const Color(0xFF1F1F1F),
                     labelStyle: TextStyle(
-                      fontFamily: AppTextStyles.fontFamily,
+                      fontFamily: 'Inter',
                       fontSize: 13,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      color: isSelected ? Colors.black : AppColors.textPrimary,
+                      color: isSelected ? Colors.black : Colors.white,
                     ),
                     onSelected: (selected) {
                       if (selected) {
@@ -150,7 +175,7 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
 
   Widget _buildSearchResults(SermonSearchState searchState, int crossAxisCount) {
     if (searchState.isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return const Center(child: CircularProgressIndicator(color: Colors.white));
     }
 
     final filtered = searchState.results.where((s) {
@@ -211,8 +236,8 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
   Widget _buildGrid(List<SermonModel> sermons, int crossAxisCount) {
     return GridView.builder(
       padding: const EdgeInsets.symmetric(
-        horizontal: AppSizes.paddingLg,
-        vertical: AppSizes.paddingMd,
+        horizontal: 24.0,
+        vertical: 16.0,
       ),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
@@ -236,7 +261,7 @@ class JumShimmerGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return JumShimmer(
       child: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingLg),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
             Row(
@@ -245,8 +270,8 @@ class JumShimmerGrid extends StatelessWidget {
                   child: Container(
                     height: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      color: const Color(0xFF1F1F1F),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                 ),
@@ -255,8 +280,8 @@ class JumShimmerGrid extends StatelessWidget {
                   child: Container(
                     height: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      color: const Color(0xFF1F1F1F),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                 ),
@@ -269,8 +294,8 @@ class JumShimmerGrid extends StatelessWidget {
                   child: Container(
                     height: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      color: const Color(0xFF1F1F1F),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                 ),
@@ -279,8 +304,8 @@ class JumShimmerGrid extends StatelessWidget {
                   child: Container(
                     height: 150,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+                      color: const Color(0xFF1F1F1F),
+                      borderRadius: BorderRadius.circular(12.0),
                     ),
                   ),
                 ),

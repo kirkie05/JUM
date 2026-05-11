@@ -19,8 +19,8 @@ import '../../data/models/course_model.dart';
 import '../../data/models/lesson_model.dart';
 import '../../data/models/enrollment_model.dart';
 import '../../data/models/quiz_question.dart';
-import '../../data/providers/school_providers.dart';
-import '../../data/repositories/school_repository.dart';
+import '../../data/providers/gospel_army_providers.dart';
+import '../../data/repositories/gospel_army_repository.dart';
 
 // -------------------------------------------------------------
 // HELPER: PDF CERTIFICATE GENERATOR
@@ -151,16 +151,16 @@ Future<void> _generateAndPrintCertificate(CourseModel course, String userName) a
 }
 
 // -------------------------------------------------------------
-// 1. SCHOOL LIST SCREEN (COURSES)
+// 1. GOSPEL ARMY LIST SCREEN (COURSES)
 // -------------------------------------------------------------
-class SchoolListScreen extends ConsumerStatefulWidget {
-  const SchoolListScreen({Key? key}) : super(key: key);
+class GospelArmyListScreen extends ConsumerStatefulWidget {
+  const GospelArmyListScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<SchoolListScreen> createState() => _SchoolListScreenState();
+  ConsumerState<GospelArmyListScreen> createState() => _GospelArmyListScreenState();
 }
 
-class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
+class _GospelArmyListScreenState extends ConsumerState<GospelArmyListScreen> {
   List<EnrollmentModel> _userEnrollments = [];
   bool _loadingEnrollments = true;
 
@@ -173,7 +173,7 @@ class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
   Future<void> _loadEnrollments() async {
     final user = ref.read(currentUserProvider).value;
     if (user != null) {
-      final repo = ref.read(schoolRepositoryProvider);
+      final repo = ref.read(gospelArmyRepositoryProvider);
       final list = await repo.fetchUserEnrollments(user.id);
       if (mounted) {
         setState(() {
@@ -196,7 +196,7 @@ class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: JumAppBar(
-        title: 'Gospel Army School',
+        title: 'Gospel Army',
         showBack: true,
       ),
       body: coursesAsync.when(
@@ -262,7 +262,7 @@ class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
                           width: 280,
                           margin: const EdgeInsets.only(right: 12),
                           child: InkWell(
-                            onTap: () => context.push('/school/${course.id}'),
+                            onTap: () => context.push('/gospel_army/${course.id}'),
                             borderRadius: BorderRadius.circular(AppSizes.radiusSm),
                             child: JumCard(
                               child: Padding(
@@ -324,7 +324,7 @@ class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.paddingMd),
                       child: InkWell(
-                        onTap: () => context.push('/school/${course.id}'),
+                        onTap: () => context.push('/gospel_army/${course.id}'),
                         child: JumCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -394,11 +394,11 @@ class _SchoolListScreenState extends ConsumerState<SchoolListScreen> {
 }
 
 // -------------------------------------------------------------
-// 2. SCHOOL DETAIL SCREEN (COURSE VIEW)
+// 2. GOSPEL ARMY DETAIL SCREEN (COURSE VIEW)
 // -------------------------------------------------------------
-class SchoolDetailScreen extends ConsumerWidget {
+class GospelArmyDetailScreen extends ConsumerWidget {
   final String courseId;
-  const SchoolDetailScreen({Key? key, required this.courseId}) : super(key: key);
+  const GospelArmyDetailScreen({Key? key, required this.courseId}) : super(key: key);
 
   Future<void> _enrollInCourse(BuildContext context, WidgetRef ref, CourseModel course) async {
     final user = ref.read(currentUserProvider).value;
@@ -410,7 +410,7 @@ class SchoolDetailScreen extends ConsumerWidget {
     }
 
     try {
-      await ref.read(schoolRepositoryProvider).enroll(user.id, course.id);
+      await ref.read(gospelArmyRepositoryProvider).enroll(user.id, course.id);
       ref.invalidate(enrollmentProvider(course.id));
       
       showDialog(
@@ -518,7 +518,7 @@ class SchoolDetailScreen extends ConsumerWidget {
                                       child: InkWell(
                                         onTap: () {
                                           if (isEnrolled) {
-                                            context.push('/school/$courseId/lesson/${lesson.id}');
+                                            context.push('/gospel_army/$courseId/lesson/${lesson.id}');
                                           } else {
                                             ScaffoldMessenger.of(context).showSnackBar(
                                               const SnackBar(content: Text('Please enroll in the course to access lessons.')),
@@ -603,7 +603,7 @@ class SchoolDetailScreen extends ConsumerWidget {
                               } else {
                                 lessonsAsync.whenData((lessons) {
                                   if (lessons.isNotEmpty) {
-                                    context.push('/school/$courseId/lesson/${lessons.first.id}');
+                                    context.push('/gospel_army/$courseId/lesson/${lessons.first.id}');
                                   }
                                 });
                               }
@@ -651,7 +651,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> with Si
   }
 
   Future<void> _loadQuiz() async {
-    final repo = ref.read(schoolRepositoryProvider);
+    final repo = ref.read(gospelArmyRepositoryProvider);
     final quiz = await repo.fetchQuiz(widget.lessonId);
     if (mounted) {
       setState(() {
@@ -821,11 +821,32 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> with Si
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     if (playerState.quizScore == null) ...[
-                                      Text(
-                                        'Solidify Your Faith',
-                                        style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Text(
+                                            'Solidify Your Faith',
+                                            style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                                          ),
+                                          IconButton(
+                                            icon: const Icon(Icons.fullscreen, color: Colors.white),
+                                            tooltip: 'Launch Standalone Quiz',
+                                            onPressed: () {
+                                              context.push('/gospel_army/${widget.courseId}/lesson/${widget.lessonId}/quiz');
+                                            },
+                                          ),
+                                        ],
                                       ),
-                                      const Gap(12),
+                                      const Gap(8),
+                                      JumButton(
+                                        label: 'LAUNCH ADVANCED QUIZ & CERTIFICATE',
+                                        variant: JumButtonVariant.secondary,
+                                        isFullWidth: true,
+                                        onPressed: () {
+                                          context.push('/gospel_army/${widget.courseId}/lesson/${widget.lessonId}/quiz');
+                                        },
+                                      ),
+                                      const Gap(20),
                                       ..._questions.asMap().entries.map((entry) {
                                         final qIdx = entry.key;
                                         final question = entry.value;
@@ -1065,6 +1086,346 @@ class _VideoControlOverlayState extends State<_VideoControlOverlay> {
           ),
         ),
       ),
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// DYNAMIC LESSON ASSESSMENT QUIZ SCREEN
+// -------------------------------------------------------------
+class QuizScreen extends StatefulWidget {
+  final String courseId;
+  final String lessonId;
+  const QuizScreen({Key? key, required this.courseId, required this.lessonId}) : super(key: key);
+
+  @override
+  State<QuizScreen> createState() => _QuizScreenState();
+}
+
+class _QuizScreenState extends State<QuizScreen> {
+  int _currentQuestionIndex = 0;
+  int? _selectedOptionIndex;
+  int _score = 0;
+  bool _quizCompleted = false;
+
+  final List<Map<String, dynamic>> _mockQuestions = [
+    {
+      'question': 'What is the primary scriptural foundation for the Gospel Army school?',
+      'options': [
+        'Study to shew thyself approved unto God (2 Tim 2:15)',
+        'By grace are ye saved through faith (Eph 2:8)',
+        'Seek ye first the kingdom of God (Matt 6:33)',
+        'Iron sharpeneth iron; so a man sharpeneth (Prov 27:17)'
+      ],
+      'correctIndex': 0,
+    },
+    {
+      'question': 'Which dynamic layout standard is strictly enforced throughout Christ\'s teachings?',
+      'options': [
+        'Compromise & Ambiguity',
+        'Holiness & Unhindered Power',
+        'Casual Intellectual Fellowship',
+        'Sectarian Separation Only'
+      ],
+      'correctIndex': 1,
+    },
+    {
+      'question': 'What is the role of a Bible student regarding theological context?',
+      'options': [
+        'Ignore historical context entirely',
+        'Extract spiritualization before grammatical structures',
+        'Always prioritize grammatical and historical context before application',
+        'Depend solely on emotional responses'
+      ],
+      'correctIndex': 2,
+    },
+  ];
+
+  void _submitOption() {
+    if (_selectedOptionIndex == null) return;
+
+    if (_selectedOptionIndex == _mockQuestions[_currentQuestionIndex]['correctIndex']) {
+      _score++;
+    }
+
+    if (_currentQuestionIndex < _mockQuestions.length - 1) {
+      setState(() {
+        _currentQuestionIndex++;
+        _selectedOptionIndex = null;
+      });
+    } else {
+      setState(() {
+        _quizCompleted = true;
+      });
+    }
+  }
+
+  Future<void> _printCertificate() async {
+    final pdf = pw.Document();
+    pdf.addPage(
+      pw.Page(
+        pageFormat: PdfPageFormat.a4.landscape,
+        build: (pw.Context context) {
+          return pw.Container(
+            padding: const pw.EdgeInsets.all(32),
+            decoration: pw.BoxDecoration(
+              border: pw.Border.all(color: PdfColors.black, width: 8),
+            ),
+            child: pw.Column(
+              mainAxisAlignment: pw.MainAxisAlignment.center,
+              crossAxisAlignment: pw.CrossAxisAlignment.center,
+              children: [
+                pw.Text(
+                  'GOSPEL ARMY SCHOOL OF MINISTRY',
+                  style: pw.TextStyle(fontSize: 28, fontWeight: pw.FontWeight.bold, color: PdfColors.black),
+                ),
+                pw.SizedBox(height: 16),
+                pw.Text(
+                  'CERTIFICATE OF COMPLETION',
+                  style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold, color: PdfColors.grey700),
+                ),
+                pw.SizedBox(height: 32),
+                pw.Text('This is to certify that', style: const pw.TextStyle(fontSize: 14)),
+                pw.SizedBox(height: 8),
+                pw.Text('EMMANUEL OLUWASEUN', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold)),
+                pw.SizedBox(height: 8),
+                pw.Text(
+                  'has successfully completed all studies and assessments for Course Module 101',
+                  textAlign: pw.TextAlign.center,
+                  style: const pw.TextStyle(fontSize: 14),
+                ),
+                pw.SizedBox(height: 48),
+                pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                  children: [
+                    pw.Column(
+                      children: [
+                        pw.Container(width: 150, height: 1, color: PdfColors.black),
+                        pw.SizedBox(height: 4),
+                        pw.Text('Pastor Kingsley', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                        pw.Text('Instructor'),
+                      ],
+                    ),
+                    pw.Column(
+                      children: [
+                        pw.Container(width: 150, height: 1, color: PdfColors.black),
+                        pw.SizedBox(height: 4),
+                        pw.Text('Bishop J.U.M.', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                        pw.Text('Chancellor'),
+                      ],
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+    await Printing.layoutPdf(onLayout: (PdfPageFormat format) async => pdf.save());
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: Text('Lesson Assessment', style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary)),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary),
+          onPressed: () => context.pop(),
+        ),
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(AppSizes.paddingLg),
+        child: _quizCompleted ? _buildResultsView() : _buildQuizView(),
+      ),
+    );
+  }
+
+  Widget _buildQuizView() {
+    final question = _mockQuestions[_currentQuestionIndex];
+    final double progress = (_currentQuestionIndex + 1) / _mockQuestions.length;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Question ${_currentQuestionIndex + 1} of ${_mockQuestions.length}',
+              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
+            ),
+            Text(
+              '${(progress * 100).toInt()}% Done',
+              style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        const Gap(8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 6,
+            backgroundColor: AppColors.surface,
+            valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+          ),
+        ),
+        const Gap(32),
+        JumCard(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingLg),
+            child: Text(
+              question['question'] as String,
+              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold, height: 1.4),
+            ),
+          ),
+        ),
+        const Gap(24),
+        ...List.generate((question['options'] as List).length, (index) {
+          final optionText = question['options'][index] as String;
+          final isSelected = _selectedOptionIndex == index;
+
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              onTap: () => setState(() => _selectedOptionIndex = index),
+              borderRadius: BorderRadius.circular(AppSizes.radiusMd),
+              child: JumCard(
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: isSelected ? Colors.white.withOpacity(0.08) : null,
+                    border: isSelected ? Border.all(color: Colors.white, width: 1.5) : null,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        isSelected ? Icons.radio_button_checked : Icons.radio_button_off,
+                        color: isSelected ? Colors.white : AppColors.textMuted,
+                      ),
+                      const Gap(16),
+                      Expanded(
+                        child: Text(
+                          optionText,
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            color: isSelected ? Colors.white : AppColors.textSecondary,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+        const Gap(24),
+        JumButton(
+          label: _currentQuestionIndex == _mockQuestions.length - 1 ? 'Finish Assessment' : 'Next Question',
+          isFullWidth: true,
+          variant: _selectedOptionIndex == null ? JumButtonVariant.secondary : JumButtonVariant.primary,
+          onPressed: _selectedOptionIndex == null ? () {} : _submitOption,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultsView() {
+    final bool isPassed = _score >= 2;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        JumCard(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.paddingLg),
+            child: Column(
+              children: [
+                Icon(
+                  isPassed ? Icons.emoji_events_outlined : Icons.info_outline,
+                  color: isPassed ? Colors.white : AppColors.textMuted,
+                  size: 72,
+                ),
+                const Gap(16),
+                Text(
+                  isPassed ? 'Approved Unto God!' : 'Study to Shew Thyself',
+                  style: AppTextStyles.h1.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                ),
+                const Gap(8),
+                Text(
+                  'You scored $_score out of ${_mockQuestions.length} questions correctly.',
+                  style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                  textAlign: TextAlign.center,
+                ),
+                const Gap(24),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: _score / _mockQuestions.length,
+                    minHeight: 12,
+                    backgroundColor: AppColors.surface,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const Gap(24),
+        if (isPassed) ...[
+          // FROSTED PHYSICAL CERTIFICATE MOCK
+          JumCard(
+            child: Padding(
+              padding: const EdgeInsets.all(AppSizes.paddingLg),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'OFFICIAL CERTIFICATE',
+                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary, letterSpacing: 1.5),
+                      ),
+                      const Icon(Icons.verified, color: Colors.white, size: 18),
+                    ],
+                  ),
+                  const Gap(16),
+                  Text(
+                    'Emmanuel Oluwaseun',
+                    style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold, fontFamily: 'serif'),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Gap(4),
+                  Text(
+                    'has successfully completed all requirements of G.A.S. Module 101 with an approved score.',
+                    style: AppTextStyles.caption.copyWith(color: AppColors.textMuted, height: 1.4),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Gap(24),
+                  JumButton(
+                    label: 'Print PDF Certificate',
+                    variant: JumButtonVariant.secondary,
+                    onPressed: _printCertificate,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const Gap(24),
+        ],
+        JumButton(
+          label: 'Back to Courses',
+          isFullWidth: true,
+          onPressed: () => context.pop(),
+        ),
+      ],
     );
   }
 }

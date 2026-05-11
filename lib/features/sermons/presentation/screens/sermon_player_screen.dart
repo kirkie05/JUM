@@ -5,10 +5,6 @@ import 'package:gap/gap.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/jum_app_bar.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../data/models/sermon_model.dart';
 import '../../data/providers/sermon_provider.dart';
@@ -79,37 +75,61 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
+      backgroundColor: const Color(0xFF161616),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.0)),
       ),
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(
-            left: AppSizes.paddingLg,
-            right: AppSizes.paddingLg,
-            top: AppSizes.paddingLg,
-            bottom: MediaQuery.of(context).viewInsets.bottom + AppSizes.paddingLg,
+            left: 24.0,
+            right: 24.0,
+            top: 24.0,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              const Text(
                 'Sermon Notes',
-                style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
-              const Gap(12),
+              const Gap(16),
               TextField(
                 controller: controller,
                 maxLines: 6,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: const InputDecoration(
+                style: const TextStyle(color: Colors.white, fontFamily: 'Inter'),
+                decoration: InputDecoration(
                   hintText: 'Take down some notes...',
+                  hintStyle: const TextStyle(color: Color(0xFF8E8E8E), fontFamily: 'Inter'),
+                  filled: true,
+                  fillColor: const Color(0xFF1F1F1F),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: BorderSide(color: Colors.white.withOpacity(0.1), width: 1.0),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.0),
+                    borderSide: const BorderSide(color: Colors.white, width: 1.0),
+                  ),
                 ),
               ),
               const Gap(16),
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 onPressed: () async {
                   await prefs.setString(noteKey, controller.text);
                   if (context.mounted) {
@@ -117,12 +137,12 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Note saved successfully!'),
-                        backgroundColor: AppColors.success,
+                        backgroundColor: Color(0xFF1F1F1F),
                       ),
                     );
                   }
                 },
-                child: const Text('Save Note'),
+                child: const Text('Save Note', style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'Inter')),
               ),
             ],
           ),
@@ -135,7 +155,7 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('Sermon downloading to local storage...'),
-        backgroundColor: AppColors.success,
+        backgroundColor: Color(0xFF1F1F1F),
       ),
     );
   }
@@ -148,35 +168,56 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
     final sermon = playerState.sermon ?? _fallbackSermon();
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: JumAppBar(
-        title: sermon.type == 'video' ? 'Video Sermon' : 'Audio Sermon',
-        showBack: true,
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        elevation: 0,
+        title: Text(
+          sermon.type == 'video' ? 'Video Sermon' : 'Audio Sermon',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 20.0,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+            letterSpacing: -0.5,
+          ),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notes_rounded, color: AppColors.accent),
+            icon: const Icon(Icons.notes_rounded, color: Colors.white),
             onPressed: () => _openNotesBottomSheet(context),
           ),
           IconButton(
-            icon: const Icon(Icons.download_rounded, color: AppColors.accent),
+            icon: const Icon(Icons.download_rounded, color: Colors.white),
             onPressed: _downloadSermon,
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFF1F1F1F),
+            height: 1.0,
+          ),
+        ),
       ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingLg),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (sermon.type == 'video') ...[
                 // Video Player Container
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                  borderRadius: BorderRadius.circular(16.0),
                   child: Container(
                     decoration: BoxDecoration(
                       color: Colors.black,
-                      border: Border.all(color: AppColors.border, width: 0.5),
+                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
                     ),
                     child: notifier.videoController != null
                         ? VideoPlayerWidget(
@@ -186,7 +227,7 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                           )
                         : const AspectRatio(
                             aspectRatio: 16 / 9,
-                            child: Center(child: CircularProgressIndicator()),
+                            child: Center(child: CircularProgressIndicator(color: Colors.white)),
                           ),
                   ),
                 ),
@@ -198,30 +239,23 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                     height: 280,
                     width: 280,
                     decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                      border: Border.all(color: AppColors.border, width: 0.5),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.accent.withOpacity(0.1),
-                          blurRadius: 20,
-                          spreadRadius: 2,
-                        )
-                      ],
+                      color: const Color(0xFF1F1F1F),
+                      borderRadius: BorderRadius.circular(24.0),
+                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
                     ),
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         ClipRRect(
-                          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                          borderRadius: BorderRadius.circular(24.0),
                           child: Image.network(
                             sermon.thumbnailUrl,
                             height: double.infinity,
                             width: double.infinity,
                             fit: BoxFit.cover,
                             errorBuilder: (c, e, s) => Container(
-                              color: AppColors.surface2,
-                              child: const Icon(Icons.music_note_rounded, size: 80, color: AppColors.accent),
+                              color: const Color(0xFF1F1F1F),
+                              child: const Icon(Icons.music_note_rounded, size: 80, color: Colors.white),
                             ),
                           ),
                         ),
@@ -229,7 +263,7 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                         if (playerState.isPlaying)
                           Positioned.fill(
                             child: Container(
-                              color: Colors.black45,
+                              color: Colors.black54,
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: List.generate(5, (index) {
@@ -239,7 +273,7 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                                     width: 8,
                                     height: playerState.isPlaying ? 40.0 + (index * 8) % 30 : 15,
                                     decoration: BoxDecoration(
-                                      color: AppColors.accent,
+                                      color: Colors.white,
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                   );
@@ -257,13 +291,23 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
               // Metadata
               Text(
                 sermon.title,
-                style: AppTextStyles.h1.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 24.0,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
                 textAlign: TextAlign.center,
               ),
               const Gap(8),
               Text(
                 sermon.speaker,
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 15.0,
+                  color: Color(0xFF8E8E8E),
+                ),
                 textAlign: TextAlign.center,
               ),
               const Gap(24),
@@ -277,8 +321,8 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                   onChanged: (val) {
                     notifier.seek(Duration(seconds: val.toInt()));
                   },
-                  activeColor: AppColors.accent,
-                  inactiveColor: AppColors.surface2,
+                  activeColor: Colors.white,
+                  inactiveColor: const Color(0xFF1F1F1F),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -287,11 +331,11 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                     children: [
                       Text(
                         _formatDuration(playerState.position),
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
                       ),
                       Text(
                         _formatDuration(playerState.duration),
-                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
                       ),
                     ],
                   ),
@@ -307,20 +351,20 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                       initialValue: playerState.speed,
                       icon: Text(
                         '${playerState.speed}x',
-                        style: const TextStyle(color: AppColors.accent, fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Inter'),
                       ),
-                      color: AppColors.surface,
+                      color: const Color(0xFF161616),
                       onSelected: (val) => notifier.setSpeed(val),
                       itemBuilder: (context) => [
-                        const PopupMenuItem(value: 0.75, child: Text('0.75x')),
-                        const PopupMenuItem(value: 1.0, child: Text('1.0x')),
-                        const PopupMenuItem(value: 1.25, child: Text('1.25x')),
-                        const PopupMenuItem(value: 1.5, child: Text('1.5x')),
-                        const PopupMenuItem(value: 2.0, child: Text('2.0x')),
+                        const PopupMenuItem(value: 0.75, child: Text('0.75x', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 1.0, child: Text('1.0x', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 1.25, child: Text('1.25x', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 1.5, child: Text('1.5x', style: TextStyle(color: Colors.white))),
+                        const PopupMenuItem(value: 2.0, child: Text('2.0x', style: TextStyle(color: Colors.white))),
                       ],
                     ),
                     IconButton(
-                      icon: const Icon(Icons.replay_10_rounded, size: 36, color: AppColors.textPrimary),
+                      icon: const Icon(Icons.replay_10_rounded, size: 36, color: Colors.white),
                       onPressed: () => notifier.skipBack15(),
                     ),
                     GestureDetector(
@@ -331,22 +375,22 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                           notifier.resume();
                         }
                       },
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 32,
-                        backgroundColor: AppColors.accent,
+                        backgroundColor: Colors.white,
                         child: Icon(
-                          Icons.play_arrow_rounded,
+                          playerState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                           size: 40,
                           color: Colors.black,
                         ),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.forward_10_rounded, size: 36, color: AppColors.textPrimary),
+                      icon: const Icon(Icons.forward_10_rounded, size: 36, color: Colors.white),
                       onPressed: () => notifier.skipForward15(),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.stop_rounded, size: 28, color: AppColors.textMuted),
+                      icon: const Icon(Icons.stop_rounded, size: 28, color: Color(0xFF8E8E8E)),
                       onPressed: () => notifier.stop(),
                     ),
                   ],
@@ -359,14 +403,24 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Sermon Description',
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 16.0,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
                     ),
                     const Gap(8),
                     Text(
                       sermon.description,
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 14.0,
+                        color: Color(0xFF8E8E8E),
+                        height: 1.5,
+                      ),
                     ),
                   ],
                 ),
@@ -468,7 +522,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                           },
                           child: CircleAvatar(
                             radius: 32,
-                            backgroundColor: AppColors.accent,
+                            backgroundColor: Colors.white,
                             child: Icon(
                               widget.playerState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                               size: 40,
@@ -503,7 +557,7 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                                 _startHideTimer();
                                 widget.notifier.seek(Duration(seconds: val.toInt()));
                               },
-                              activeColor: AppColors.accent,
+                              activeColor: Colors.white,
                               inactiveColor: Colors.white24,
                             ),
                           ),

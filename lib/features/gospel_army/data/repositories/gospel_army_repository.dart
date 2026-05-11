@@ -7,9 +7,9 @@ import '../models/enrollment_model.dart';
 import '../models/quiz_question.dart';
 import '../models/quiz_attempt.dart';
 
-class SchoolRepository {
+class GospelArmyRepository {
   final SupabaseClient _supabase;
-  SchoolRepository(this._supabase);
+  GospelArmyRepository(this._supabase);
 
   // In-memory fallback lists for demo/testing and safety
   static final List<CourseModel> _mockCourses = [
@@ -214,6 +214,6 @@ class SchoolRepository {
   }
 }
 
-final schoolRepositoryProvider = Provider<SchoolRepository>((ref) {
-  return SchoolRepository(ref.watch(supabaseClientProvider));
+final gospelArmyRepositoryProvider = Provider<GospelArmyRepository>((ref) {
+  return GospelArmyRepository(ref.watch(supabaseClientProvider));
 });
