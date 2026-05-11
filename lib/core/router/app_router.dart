@@ -29,7 +29,7 @@ import '../../features/live/presentation/screens/live_stream_screen.dart';
 import '../../features/live/presentation/screens/live_watch_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/home/community',
+  initialLocation: '/',
   routes: [
     // Auth routes
     GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
