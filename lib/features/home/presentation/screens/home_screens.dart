@@ -9,6 +9,10 @@ import '../../../../shared/widgets/jum_avatar.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../features/auth/data/providers/auth_provider.dart';
+import '../../../../features/media/data/providers/media_provider.dart';
+import '../../../../features/media/data/models/media_item.dart';
+import '../../../../features/media/presentation/screens/media_player_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -51,105 +55,148 @@ class HomeScreen extends ConsumerWidget {
               const Gap(24),
 
               // Featured Sermon Card
-              InkWell(
-                onTap: () => context.push('/sermons/the-path-of-silence'),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16.0),
-                    border: Border.all(
-                      color: const Color(0xFFE5E7EB),
-                      width: 1.0,
-                    ),
-                    color: Colors.white,
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Image.network(
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuArX1Lt6rJFedRucDSWnu5eloTUStmQNpsGC4CTJwwkIZ9Z1AfWRR5IwaEwwvEhvEte57IpHsAHHgMUSapTvcJibHcO8SRV98QRREX0VJ85VWk4RyNKhyrXiSuQT89amPFAG3uzMmXTwRwjUJxE5S47gEoMtq_oLshwZVkE_hcGcRg-QbYAiIi9sK014EpC51uJz9K1ANqgw0ZHMpNzBjjhe2dAln1SVPt07BAymWY1xTEBIQ1XzXmnNKGYoX1we8JDOMIhhvLMTA',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
+              ref.watch(mediaFeedProvider).when(
+                    data: (items) {
+                      final latestVideo = items
+                          .where((item) => item.type == MediaItemType.video)
+                          .firstOrNull;
+
+                      if (latestVideo == null) {
+                        return const SizedBox.shrink();
+                      }
+
+                      return InkWell(
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                MediaPlayerScreen(item: latestVideo),
+                          ),
+                        ),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16.0),
+                            border: Border.all(
+                              color: const Color(0xFFE5E7EB),
+                              width: 1.0,
+                            ),
+                            color: Colors.white,
+                          ),
+                          clipBehavior: Clip.antiAlias,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: latestVideo.thumbnailUrl != null
+                                        ? CachedNetworkImage(
+                                            imageUrl: latestVideo.thumbnailUrl!,
+                                            fit: BoxFit.cover,
+                                            errorWidget:
+                                                (context, error, stackTrace) =>
+                                                    Container(
+                                              color: const Color(0xFFEEEEEE),
+                                              child: const Icon(
+                                                Icons.church,
+                                                size: 48.0,
+                                                color: Colors.black26,
+                                              ),
+                                            ),
+                                          )
+                                        : Container(
+                                            color: const Color(0xFFEEEEEE),
+                                            child: const Icon(
+                                              Icons.church,
+                                              size: 48.0,
+                                              color: Colors.black26,
+                                            ),
+                                          ),
+                                  ),
                                   Container(
-                                    color: const Color(0xFFEEEEEE),
+                                    width: 48.0,
+                                    height: 48.0,
+                                    decoration: const BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                    ),
                                     child: const Icon(
-                                      Icons.church,
-                                      size: 48.0,
-                                      color: Colors.black26,
+                                      Icons.play_arrow,
+                                      size: 28.0,
+                                      color: Colors.black,
                                     ),
                                   ),
-                            ),
-                          ),
-                          Container(
-                            width: 48.0,
-                            height: 48.0,
-                            decoration: const BoxDecoration(
-                              color: Colors.white,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.play_arrow,
-                              size: 28.0,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8.0,
-                                vertical: 4.0,
+                                ],
                               ),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF3F4F6),
-                                borderRadius: BorderRadius.circular(4.0),
-                              ),
-                              child: const Text(
-                                'LATEST SERMON',
-                                style: TextStyle(
-                                  fontFamily: 'Inter',
-                                  fontSize: 10.0,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black,
+                              Padding(
+                                padding: const EdgeInsets.all(20.0),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8.0,
+                                        vertical: 4.0,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFF3F4F6),
+                                        borderRadius: BorderRadius.circular(4.0),
+                                      ),
+                                      child: const Text(
+                                        'LATEST SERMON',
+                                        style: TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 10.0,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black,
+                                        ),
+                                      ),
+                                    ),
+                                    const Gap(12),
+                                    Text(
+                                      latestVideo.title,
+                                      maxLines: 2,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 18.0,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                    const Gap(4),
+                                    Text(
+                                      latestVideo.viewCount != null
+                                          ? '${latestVideo.viewCount} views'
+                                          : latestVideo.sourceName,
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 14.0,
+                                        color: Color(0xFF6B7280),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ),
-                            const Gap(12),
-                            const Text(
-                              'The Path of Silence',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 18.0,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                            const Gap(4),
-                            const Text(
-                              'Rev. Elijah Thorne • 42 mins',
-                              style: TextStyle(
-                                fontFamily: 'Inter',
-                                fontSize: 14.0,
-                                color: Color(0xFF6B7280),
-                              ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
+                      );
+                    },
+                    loading: () => Container(
+                      height: 200,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
                       ),
-                    ],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    error: (_, __) => const SizedBox.shrink(),
                   ),
-                ),
-              ),
 
               const Gap(32),
 

@@ -1,6 +1,8 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 import 'package:youtube_player_flutter/youtube_player_flutter.dart';
 
@@ -21,10 +23,15 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
   VideoPlayerController? _vpController;
   bool _isInitialized = false;
 
+  final _noteController = TextEditingController();
+  SharedPreferences? _prefs;
+  bool _isSaving = false;
+
   @override
   void initState() {
     super.initState();
     _initializePlayer();
+    _loadNote();
   }
 
   void _initializePlayer() {
@@ -45,7 +52,6 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
         _isInitialized = true;
       }
     } else {
-      // Fallback to native VideoPlayer for non-youtube contents (like Mixlr streams/mp3s)
       _vpController = VideoPlayerController.networkUrl(Uri.parse(url))
         ..initialize().then((_) {
           if (mounted) {
@@ -60,10 +66,35 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
     }
   }
 
+  Future<void> _loadNote() async {
+    _prefs = await SharedPreferences.getInstance();
+    final noteKey = 'media_note_${widget.item.id}';
+    final savedText = _prefs?.getString(noteKey) ?? '';
+    setState(() {
+      _noteController.text = savedText;
+    });
+  }
+
+  Future<void> _saveNote(String text) async {
+    if (_prefs == null) return;
+    final noteKey = 'media_note_${widget.item.id}';
+    setState(() => _isSaving = true);
+    await _prefs?.setString(noteKey, text);
+    setState(() => _isSaving = false);
+  }
+
+  void _shareNote() {
+    final noteText = _noteController.text;
+    final content =
+        'Note on "${widget.item.title}":\n\n$noteText\n\n- via Jesus Unhindered Ministry app';
+    Share.share(content, subject: 'My Sermon Notes: ${widget.item.title}');
+  }
+
   @override
   void dispose() {
     _ytController?.dispose();
     _vpController?.dispose();
+    _noteController.dispose();
     super.dispose();
   }
 
@@ -91,8 +122,19 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
               icon: const Icon(Icons.keyboard_arrow_down_rounded, size: 32),
               onPressed: () => Navigator.pop(context),
             ),
+            actions: [
+              IconButton(
+                tooltip: 'Share Note',
+                icon: const Icon(Icons.share_outlined),
+                onPressed: _shareNote,
+              ),
+              const Gap(12),
+            ],
           ),
           body: SingleChildScrollView(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom + 40,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -107,95 +149,166 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
                   child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.item.title,
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                  color: isDark ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-              const Gap(8),
-              Row(
-                children: [
-                  if (widget.item.isLive) ...[
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.error,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: const Text(
-                        'LIVE',
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.item.title,
                         style: TextStyle(
-                          fontSize: 11,
+                          fontFamily: 'Inter',
+                          fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                          color: isDark ? Colors.white : AppColors.textPrimary,
                         ),
                       ),
-                    ),
-                    const Gap(12),
-                  ],
-                  Text(
-                    widget.item.type == MediaItemType.video
-                        ? 'Video'
-                        : 'Audio stream',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      color: isDark ? Colors.white60 : AppColors.textSecondary,
-                    ),
-                  ),
-                  if (widget.item.viewCount != null) ...[
-                    const Gap(8),
-                    Text(
-                      '•',
-                      style: TextStyle(
-                        color:
-                            isDark ? Colors.white38 : AppColors.textSecondary,
+                      const Gap(8),
+                      Row(
+                        children: [
+                          if (widget.item.isLive) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'LIVE',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const Gap(12),
+                          ],
+                          Text(
+                            widget.item.type == MediaItemType.video
+                                ? 'Video'
+                                : 'Audio stream',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              color: isDark
+                                  ? Colors.white60
+                                  : AppColors.textSecondary,
+                            ),
+                          ),
+                          if (widget.item.viewCount != null) ...[
+                            const Gap(8),
+                            Text(
+                              '•',
+                              style: TextStyle(
+                                color: isDark
+                                    ? Colors.white38
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                            const Gap(8),
+                            Text(
+                              '${widget.item.viewCount} views',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                color: isDark
+                                    ? Colors.white60
+                                    : AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      '${widget.item.viewCount} views',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        color:
-                            isDark ? Colors.white60 : AppColors.textSecondary,
+                      const Divider(height: 40, color: Colors.white12),
+
+                      // Notes Section
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: isDark ? Colors.white.withOpacity(0.05) : Colors.grey.shade100,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isDark ? Colors.white10 : Colors.grey.shade300,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'TAKE NOTES',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 1.1,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                                if (_isSaving)
+                                  const SizedBox(
+                                    height: 12,
+                                    width: 12,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.grey,
+                                    ),
+                                  )
+                                else
+                                  const Icon(
+                                    Icons.check_circle_outline_rounded,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                              ],
+                            ),
+                            const Gap(12),
+                            TextField(
+                              controller: _noteController,
+                              maxLines: null,
+                              minLines: 4,
+                              onChanged: _saveNote,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                color: isDark ? Colors.white : Colors.black87,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Write your thoughts here...',
+                                hintStyle: TextStyle(
+                                  color: isDark ? Colors.white38 : Colors.black38,
+                                ),
+                                border: InputBorder.none,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ],
-              ),
-              const Divider(height: 48, color: Colors.white12),
-              if (widget.item.description != null &&
-                  widget.item.description!.isNotEmpty) ...[
-                const Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const Gap(8),
-                Text(
-                  widget.item.description!,
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 14,
-                    color: isDark ? Colors.white70 : AppColors.textSecondary,
-                    height: 1.5,
-                  ),
-                ),
-                const Gap(40),
-              ],
-            ],
+                      const Gap(24),
+
+                      if (widget.item.description != null &&
+                          widget.item.description!.isNotEmpty) ...[
+                        const Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Gap(8),
+                        Text(
+                          widget.item.description!,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14,
+                            color: isDark
+                                ? Colors.white70
+                                : AppColors.textSecondary,
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ],
@@ -218,14 +331,12 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
         );
       }
 
-      // Render visual interface for audio or custom video
       return Stack(
         alignment: Alignment.bottomCenter,
         children: [
           if (widget.item.type == MediaItemType.video)
             VideoPlayer(_vpController!)
           else
-            // Custom background for audio
             Stack(
               fit: StackFit.expand,
               children: [
@@ -250,7 +361,10 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
                 ),
               ],
             ),
-          _VideoControls(controller: _vpController!),
+          _VideoControls(
+            controller: _vpController!,
+            isVideo: widget.item.type == MediaItemType.video,
+          ),
         ],
       );
     }
@@ -262,14 +376,17 @@ class _MediaPlayerScreenState extends State<MediaPlayerScreen> {
 }
 
 class _VideoControls extends StatefulWidget {
-  const _VideoControls({required this.controller});
+  const _VideoControls({required this.controller, this.isVideo = false});
   final VideoPlayerController controller;
+  final bool isVideo;
 
   @override
   State<_VideoControls> createState() => _VideoControlsState();
 }
 
 class _VideoControlsState extends State<_VideoControls> {
+  bool _isFullScreen = false;
+
   @override
   void initState() {
     super.initState();
@@ -284,6 +401,12 @@ class _VideoControlsState extends State<_VideoControls> {
   void dispose() {
     widget.controller.removeListener(_listener);
     super.dispose();
+  }
+
+  void _seekRelative(int seconds) {
+    final current = widget.controller.value.position;
+    final target = current + Duration(seconds: seconds);
+    widget.controller.seekTo(target);
   }
 
   @override
@@ -314,16 +437,26 @@ class _VideoControlsState extends State<_VideoControls> {
           Row(
             children: [
               IconButton(
+                icon: const Icon(Icons.replay_10_rounded,
+                    color: Colors.white, size: 24),
+                onPressed: () => _seekRelative(-10),
+              ),
+              IconButton(
                 icon: Icon(
                   isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
                   color: Colors.white,
-                  size: 28,
+                  size: 32,
                 ),
                 onPressed: () {
                   isPlaying
                       ? widget.controller.pause()
                       : widget.controller.play();
                 },
+              ),
+              IconButton(
+                icon: const Icon(Icons.forward_10_rounded,
+                    color: Colors.white, size: 24),
+                onPressed: () => _seekRelative(10),
               ),
               const Spacer(),
               Text(
@@ -336,6 +469,24 @@ class _VideoControlsState extends State<_VideoControls> {
                 _formatDuration(value.duration),
                 style: const TextStyle(color: Colors.white, fontSize: 12),
               ),
+              if (widget.isVideo) ...[
+                const Gap(8),
+                IconButton(
+                  icon: Icon(
+                    _isFullScreen
+                        ? Icons.fullscreen_exit_rounded
+                        : Icons.fullscreen_rounded,
+                    color: Colors.white,
+                  ),
+                  onPressed: () {
+                    // Simple state-driven toggle for demo. Fullscreen requires overlay
+                    setState(() => _isFullScreen = !_isFullScreen);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Toggled Fullscreen Mode')),
+                    );
+                  },
+                ),
+              ],
               const Gap(12),
             ],
           ),

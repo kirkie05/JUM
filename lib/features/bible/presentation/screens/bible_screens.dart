@@ -1,933 +1,721 @@
 import 'package:flutter/material.dart';
-import 'package:gap/gap.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:dio/dio.dart';
-import '../../../../core/constants/app_colors.dart';
-import '../../../../core/constants/app_sizes.dart';
-import '../../../../core/constants/app_text_styles.dart';
-import '../../../../shared/widgets/jum_card.dart';
-import '../../../../shared/widgets/jum_button.dart';
-import '../../../../shared/widgets/jum_text_field.dart';
+import 'package:gap/gap.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/services.dart';
 
-// -------------------------------------------------------------
-// BIBLE HOME SCREEN (TABBED SYSTEM FOR READER & PLANS)
-// -------------------------------------------------------------
-class BibleReaderScreen extends StatefulWidget {
+import '../../../../core/constants/app_colors.dart';
+import '../../data/providers/bible_providers.dart';
+import '../../data/models/bible_models.dart';
+import '../widgets/bible_content_renderer.dart';
+
+class BibleReaderScreen extends ConsumerStatefulWidget {
   const BibleReaderScreen({Key? key}) : super(key: key);
 
   @override
-  State<BibleReaderScreen> createState() => _BibleReaderScreenState();
+  ConsumerState<BibleReaderScreen> createState() => _BibleReaderScreenState();
 }
 
-class _BibleReaderScreenState extends State<BibleReaderScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
+  final ScrollController _scrollController = ScrollController();
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 2, vsync: this);
+  void _showVerseOptions(int verseNum, String content, String bookName, int chapterNum) {
+    final refString = '$bookName $chapterNum:$verseNum';
+    final currentBookId = ref.read(currentBookProvider);
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => _VerseOptionsSheet(
+        reference: refString,
+        content: content,
+        bookId: currentBookId,
+        chapterNum: chapterNum,
+        verseNum: verseNum,
+      ),
+    ).whenComplete(() {
+      // Deselect verse when modal is dismissed
+      ref.read(selectedVerseProvider.notifier).state = null;
+    });
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
+  void _navigateToChapter(int delta, List<BibleBook> books, String currentBookId, int currentCh) {
+    // Complex bounding logic: handle moving across book boundaries
+    final currentIndex = books.indexWhere((b) => b.id == currentBookId);
+    if (currentIndex == -1) return;
+    final book = books[currentIndex];
+
+    int nextCh = currentCh + delta;
+    if (nextCh < 1) {
+      // Go to previous book's last chapter
+      if (currentIndex > 0) {
+        final prevBook = books[currentIndex - 1];
+        ref.read(currentBookProvider.notifier).state = prevBook.id;
+        ref.read(currentChapterNumberProvider.notifier).state = prevBook.numberOfChapters;
+        _scrollController.jumpTo(0);
+      }
+    } else if (nextCh > book.numberOfChapters) {
+      // Go to next book's first chapter
+      if (currentIndex < books.length - 1) {
+        final nextBook = books[currentIndex + 1];
+        ref.read(currentBookProvider.notifier).state = nextBook.id;
+        ref.read(currentChapterNumberProvider.notifier).state = 1;
+        _scrollController.jumpTo(0);
+      }
+    } else {
+      // Normal step within same book
+      ref.read(currentChapterNumberProvider.notifier).state = nextCh;
+      _scrollController.jumpTo(0);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final booksAsync = ref.watch(bibleBooksProvider);
+    final chapterAsync = ref.watch(bibleChapterProvider);
+    final currentBookId = ref.watch(currentBookProvider);
+    final currentCh = ref.watch(currentChapterNumberProvider);
+    final themeMode = ref.watch(bibleReadingThemeProvider);
+    final bool isDark = themeMode == ReadingTheme.dark;
+
+    // Define dynamic coloring based on preferences
+    Color bgColor = Colors.white;
+    Color appBarColor = Colors.white;
+    Color textColor = Colors.black87;
+    Brightness bright = Brightness.light;
+
+    if (themeMode == ReadingTheme.sepia) {
+      bgColor = const Color(0xFFFDF6E3);
+      appBarColor = const Color(0xFFFDF6E3);
+      textColor = const Color(0xFF586E75);
+      bright = Brightness.light;
+    } else if (themeMode == ReadingTheme.dark) {
+      bgColor = const Color(0xFF121212);
+      appBarColor = const Color(0xFF1E1E1E);
+      textColor = Colors.white70;
+      bright = Brightness.dark;
+    }
+
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: bgColor,
       appBar: AppBar(
-        title: Text(
-          'Holy Scripture',
-          style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: appBarColor,
         elevation: 0,
-        centerTitle: false,
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(48),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
-              child: TabBar(
-                controller: _tabController,
-                isScrollable: true,
-                indicatorColor: AppColors.textPrimary,
-                labelColor: AppColors.textPrimary,
-                unselectedLabelColor: AppColors.textMuted,
-                labelStyle: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.bold),
-                unselectedLabelStyle: AppTextStyles.bodyMedium,
-                tabs: const [
-                  Tab(text: 'Scripture Reader'),
-                  Tab(text: 'Reading Plans'),
-                ],
-              ),
-            ),
-          ),
+        systemOverlayStyle: SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: bright == Brightness.dark ? Brightness.light : Brightness.dark,
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: const [
-          _BibleReaderTab(),
-          _ReadingPlansTab(),
-        ],
-      ),
-    );
-  }
-}
-
-// -------------------------------------------------------------
-// SCRIPTURE READER TAB (BILINGUAL & VERSE ACTIONS SUPPORT)
-// -------------------------------------------------------------
-class _BibleReaderTab extends StatefulWidget {
-  const _BibleReaderTab({Key? key}) : super(key: key);
-
-  @override
-  State<_BibleReaderTab> createState() => _BibleReaderTabState();
-}
-
-class _BibleReaderTabState extends State<_BibleReaderTab> {
-  String _selectedBook = 'Genesis';
-  int _selectedChapter = 1;
-  double _fontSize = 16.0;
-  bool _isBilingual = true;
-  String _activeTranslation = 'KJV';
-  String _bilingualTranslation = 'YOR';
-
-  final Set<int> _bookmarkedVerses = {};
-  final Map<int, Color> _verseHighlights = {};
-  final Map<int, String> _verseNotes = {};
-
-  final Dio _dio = Dio();
-  bool _isLoading = false;
-  List<Map<String, String>> _fetchedVerses = [];
-
-  final List<String> _books = [
-    'Genesis', 'Exodus', 'Leviticus', 'Numbers', 'Deuteronomy', 'Joshua', 'Judges', 'Ruth',
-    '1 Samuel', '2 Samuel', '1 Kings', '2 Kings', '1 Chronicles', '2 Chronicles', 'Ezra',
-    'Nehemiah', 'Esther', 'Job', 'Psalms', 'Proverbs', 'Ecclesiastes', 'Song of Solomon',
-    'Isaiah', 'Jeremiah', 'Lamentations', 'Ezekiel', 'Daniel', 'Hosea', 'Joel', 'Amos',
-    'Obadiah', 'Jonah', 'Micah', 'Nahum', 'Habakkuk', 'Zephaniah', 'Haggai', 'Zechariah',
-    'Malachi', 'Matthew', 'Mark', 'Luke', 'John', 'Acts', 'Romans', '1 Corinthians',
-    '2 Corinthians', 'Galatians', 'Ephesians', 'Philippians', 'Colossians', '1 Thessalonians',
-    '2 Thessalonians', '1 Timothy', '2 Timothy', 'Titus', 'Philemon', 'Hebrews', 'James',
-    '1 Peter', '2 Peter', '1 John', '2 John', '3 John', 'Jude', 'Revelation'
-  ];
-
-  int _getMaxChapters(String book) {
-    switch (book) {
-      case 'Genesis': return 50;
-      case 'Exodus': return 40;
-      case 'Leviticus': return 27;
-      case 'Numbers': return 36;
-      case 'Deuteronomy': return 34;
-      case 'Joshua': return 24;
-      case 'Judges': return 21;
-      case 'Ruth': return 4;
-      case '1 Samuel': return 31;
-      case '2 Samuel': return 24;
-      case '1 Kings': return 22;
-      case '2 Kings': return 25;
-      case '1 Chronicles': return 29;
-      case '2 Chronicles': return 36;
-      case 'Ezra': return 10;
-      case 'Nehemiah': return 13;
-      case 'Esther': return 10;
-      case 'Job': return 42;
-      case 'Psalms': return 150;
-      case 'Proverbs': return 31;
-      case 'Ecclesiastes': return 12;
-      case 'Song of Solomon': return 8;
-      case 'Isaiah': return 66;
-      case 'Jeremiah': return 52;
-      case 'Lamentations': return 5;
-      case 'Ezekiel': return 48;
-      case 'Daniel': return 12;
-      case 'Hosea': return 14;
-      case 'Joel': return 3;
-      case 'Amos': return 9;
-      case 'Obadiah': return 1;
-      case 'Jonah': return 4;
-      case 'Micah': return 7;
-      case 'Nahum': return 3;
-      case 'Habakkuk': return 3;
-      case 'Zephaniah': return 3;
-      case 'Haggai': return 2;
-      case 'Zechariah': return 14;
-      case 'Malachi': return 4;
-      case 'Matthew': return 28;
-      case 'Mark': return 16;
-      case 'Luke': return 24;
-      case 'John': return 21;
-      case 'Acts': return 28;
-      case 'Romans': return 16;
-      case '1 Corinthians': return 16;
-      case '2 Corinthians': return 13;
-      case 'Galatians': return 6;
-      case 'Ephesians': return 6;
-      case 'Philippians': return 4;
-      case 'Colossians': return 4;
-      case '1 Thessalonians': return 5;
-      case '2 Thessalonians': return 3;
-      case '1 Timothy': return 6;
-      case '2 Timothy': return 4;
-      case 'Titus': return 3;
-      case 'Philemon': return 1;
-      case 'Hebrews': return 13;
-      case 'James': return 5;
-      case '1 Peter': return 5;
-      case '2 Peter': return 3;
-      case '1 John': return 5;
-      case '2 John': return 1;
-      case '3 John': return 1;
-      case 'Jude': return 1;
-      case 'Revelation': return 22;
-      default: return 50;
-    }
-  }
-
-  // Raw high-fidelity bilingual translations for demonstration fallback
-  final List<Map<String, String>> _genesisVerses = [
-    {
-      'KJV': 'In the beginning God created the heaven and the earth.',
-      'YOR': 'Ní ìbẹ̀rẹ̀pẹ̀pẹ̀ Ọlọ́run dá àwọn ọ̀run àti ayé.',
-      'FRE': 'Au commencement, Dieu créa les cieux et la terre.'
-    },
-    {
-      'KJV': 'And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.',
-      'YOR': 'Ayé sì wà ní ríru àti lófò; òkùnkùn sì wà lójú ibú. Ẹ̀mí Ọlọ́run sì n-ràbàbà lójú omi.',
-      'FRE': "La terre était informe et vide: il y avait des ténèbres à la surface de l'abîme, et l'esprit de Dieu se mouvait au-dessus des eaux."
-    },
-    {
-      'KJV': 'And God said, Let there be light: and there was light.',
-      'YOR': 'Ọlọ́run sì wí pé, "Kí ìmọ́lẹ̀ kí ó wà." Ìmọ́lẹ̀ sì wà.',
-      'FRE': 'Dieu dit: Que la lumière soit! Et la lumière fut.'
-    },
-    {
-      'KJV': 'And God saw the light, that it was good: and God divided the light from the darkness.',
-      'YOR': 'Ọlọ́run sì rí i pé ìmọ́lẹ̀ náà dára. Ọlọ́run sì ya ìmọ́lẹ̀ náà sọ́tọ̀ kúrò lára òkùnkùn.',
-      'FRE': 'Dieu vit que la lumière était bonne; et Dieu sépara la lumière d\'avec les ténèbres.'
-    },
-    {
-      'KJV': 'And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.',
-      'YOR': 'Ọlọ́run sì pe ìmọ́lẹ̀ náà ní "Ọ̀sán", òkùnkùn sì ni ó pe ní "Òru". Alẹ́ sì lẹ́, àárọ̀ sì tún mọ́—ní ọjọ́ kìn-ín-ní.',
-      'FRE': 'Dieu appela la lumière jour, et il appela les ténèbres nuit. Ainsi, il y eut un soir, et il y eut un matin: ce fut le premier jour.'
-    },
-  ];
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchedVerses = _genesisVerses;
-    _fetchScripture();
-  }
-
-  Future<void> _fetchScripture() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      String primaryTrans = _activeTranslation.toLowerCase();
-      String secondaryTrans = _bilingualTranslation.toLowerCase();
-
-      // Translate code mapping to API endpoints (fallback Cherokee/BBE if not supported natively)
-      if (primaryTrans == 'yor') primaryTrans = 'bbe';
-      if (secondaryTrans == 'yor') secondaryTrans = 'bbe';
-      if (primaryTrans == 'fre') primaryTrans = 'bbe';
-      if (secondaryTrans == 'fre') secondaryTrans = 'bbe';
-
-      final primaryUrl = 'https://bible-api.com/${_selectedBook}+${_selectedChapter}?translation=$primaryTrans';
-      final primaryResponse = await _dio.get(primaryUrl);
-
-      final List<Map<String, String>> parsed = [];
-
-      if (primaryResponse.statusCode == 200 && primaryResponse.data != null) {
-        final primaryVerses = primaryResponse.data['verses'] as List<dynamic>;
-
-        List<dynamic> secondaryVerses = [];
-        if (_isBilingual && primaryTrans != secondaryTrans) {
-          try {
-            final secondaryUrl = 'https://bible-api.com/${_selectedBook}+${_selectedChapter}?translation=$secondaryTrans';
-            final secondaryResponse = await _dio.get(secondaryUrl);
-            if (secondaryResponse.statusCode == 200) {
-              secondaryVerses = secondaryResponse.data['verses'] as List<dynamic>;
+        leading: IconButton(
+          icon: Icon(Icons.menu, color: textColor),
+          onPressed: () {
+            if (booksAsync.hasValue) {
+              _showBookChapterPicker(context, ref, booksAsync.value!, currentBookId, currentCh);
             }
-          } catch (_) {}
-        }
-
-        for (int i = 0; i < primaryVerses.length; i++) {
-          final pText = (primaryVerses[i]['text'] as String).trim();
-          final sText = (secondaryVerses.isNotEmpty && i < secondaryVerses.length)
-              ? (secondaryVerses[i]['text'] as String).trim()
-              : 'Episod ${_selectedBook} ${_selectedChapter}:${i + 1}';
-
-          parsed.add({
-            _activeTranslation: pText,
-            _bilingualTranslation: sText,
-          });
-        }
-
-        setState(() {
-          _fetchedVerses = parsed;
-          _isLoading = false;
-        });
-      } else {
-        throw Exception();
-      }
-    } catch (_) {
-      setState(() {
-        _fetchedVerses = _genesisVerses;
-        _isLoading = false;
-      });
-    }
-  }
-
-  void _showFontAdjustmentSheet() {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setSheetState) {
-            return Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingLg),
-              child: Column(
+          },
+        ),
+        title: booksAsync.when(
+          data: (books) {
+            final currentBook = books.firstWhere(
+              (b) => b.id == currentBookId,
+              orElse: () => books.first,
+            );
+            return InkWell(
+              onTap: () => _showBookChapterPicker(context, ref, books, currentBookId, currentCh),
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Reader Preferences',
-                    style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
+                    '${currentBook.name} $currentCh',
+                    style: TextStyle(
+                      color: textColor,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Inter',
+                      fontSize: 18,
+                    ),
                   ),
-                  const Gap(24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Font Size',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                      ),
-                      Text(
-                        '${_fontSize.toInt()}px',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  Slider(
-                    value: _fontSize,
-                    min: 14.0,
-                    max: 26.0,
-                    activeColor: AppColors.textPrimary,
-                    inactiveColor: AppColors.border,
-                    onChanged: (val) {
-                      setState(() => _fontSize = val);
-                      setSheetState(() {});
-                    },
-                  ),
-                  const Gap(16),
-                  const Divider(color: AppColors.border),
-                  const Gap(16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Bilingual Layout',
-                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                      ),
-                      Switch.adaptive(
-                        value: _isBilingual,
-                        activeColor: Colors.white,
-                        activeTrackColor: AppColors.textSecondary,
-                        onChanged: (val) {
-                          setState(() => _isBilingual = val);
-                          setSheetState(() {});
-                        },
-                      ),
-                    ],
-                  ),
-                  const Gap(24),
+                  const Gap(4),
+                  Icon(Icons.keyboard_arrow_down, color: textColor.withOpacity(0.7), size: 20),
                 ],
               ),
             );
           },
-        );
-      },
-    );
-  }
-
-  void _showVerseActionsSheet(int verseNum, Map<String, String> verseMap) {
-    final noteController = TextEditingController(text: _verseNotes[verseNum] ?? '');
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusLg)),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: AppSizes.paddingLg,
-            left: AppSizes.paddingLg,
-            right: AppSizes.paddingLg,
+          loading: () => const SizedBox.shrink(),
+          error: (_, __) => const Text('Bible'),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.search, color: textColor, size: 24),
+            onPressed: () => GoRouter.of(context).push('/search'),
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Verse $verseNum Actions',
-                style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
+          const Gap(4),
+          // New Interactive Version Display
+          InkWell(
+            onTap: () => _showTranslationPickerSheet(context, ref),
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+              decoration: BoxDecoration(
+                color: isDark ? Colors.white.withOpacity(0.08) : Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(8),
               ),
-              const Gap(16),
-              // Highlights Palette
-              Text(
-                'Highlight Tones',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-              ),
-              const Gap(12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  _buildHighlightPalette(verseNum, Colors.transparent, 'None', Icons.block),
-                  _buildHighlightPalette(verseNum, const Color(0xFF2E2E2E), 'Soft Grey', Icons.circle),
-                  _buildHighlightPalette(verseNum, const Color(0xFF4E4E4E), 'Charcoal', Icons.circle),
-                  _buildHighlightPalette(verseNum, Colors.white.withOpacity(0.9), 'Pearl', Icons.circle),
+                  Text(
+                    ref.watch(bibleTranslationProvider).toUpperCase(),
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                      color: textColor,
+                    ),
+                  ),
+                  Icon(Icons.arrow_drop_down, size: 18, color: textColor),
                 ],
               ),
-              const Gap(24),
-              const Divider(color: AppColors.border),
-              const Gap(16),
-              // Actions Options
-              Row(
+            ),
+          ),
+          const Gap(4),
+          IconButton(
+            icon: Icon(Icons.settings_outlined, color: textColor, size: 24),
+            onPressed: () => _showGeneralSettingsSheet(context, ref),
+          ),
+          const Gap(8),
+        ],
+      ),
+      body: Stack(
+        children: [
+          chapterAsync.when(
+            data: (chapter) {
+              final currentBookName = booksAsync.whenOrNull(
+                data: (l) => l.firstWhere((b) => b.id == currentBookId).name,
+              ) ?? '';
+
+              return ListView(
+                controller: _scrollController,
+                padding: const EdgeInsets.only(top: 20, bottom: 120),
                 children: [
-                  Expanded(
-                    child: JumButton(
-                      label: _bookmarkedVerses.contains(verseNum) ? 'Remove Bookmark' : 'Add Bookmark',
-                      variant: _bookmarkedVerses.contains(verseNum) ? JumButtonVariant.secondary : JumButtonVariant.primary,
-                      onPressed: () {
-                        setState(() {
-                          if (_bookmarkedVerses.contains(verseNum)) {
-                            _bookmarkedVerses.remove(verseNum);
-                          } else {
-                            _bookmarkedVerses.add(verseNum);
-                          }
-                        });
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(_bookmarkedVerses.contains(verseNum) ? 'Bookmark saved.' : 'Bookmark removed.'),
-                            backgroundColor: AppColors.textPrimary,
+                  // Giant Top Header
+                  Center(
+                    child: Text(
+                      '$currentBookName ${chapter.number}',
+                      style: TextStyle(
+                        fontFamily: 'Serif',
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                  const Gap(8),
+                  Center(
+                    child: Container(
+                      width: 50,
+                      height: 2.5,
+                      color: textColor.withOpacity(0.6),
+                    ),
+                  ),
+                  const Gap(24),
+                  // Dynamic Body Content
+                  BibleContentRenderer(
+                    chapter: chapter,
+                    onVerseSelected: (vNum, content) {
+                      _showVerseOptions(vNum, content, currentBookName, chapter.number);
+                    },
+                  ),
+                  const Gap(40),
+                  // Reflection Card
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF2C2C2C) : (themeMode == ReadingTheme.sepia ? const Color(0xFFF3EBDB) : const Color(0xFFF8F8F8)),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Reflect',
+                            style: TextStyle(
+                              fontStyle: FontStyle.italic,
+                              color: Colors.grey,
+                              fontSize: 13,
+                            ),
                           ),
-                        );
-                      },
+                          const Gap(8),
+                          Text(
+                            'How do the messages of this chapter resonate with your walk with Christ today?',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 15,
+                              color: textColor.withOpacity(0.8),
+                              height: 1.4,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
-              ),
-              const Gap(24),
-              // Private Study Notes
-              Text(
-                'Private Study Notes',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary, fontWeight: FontWeight.bold),
-              ),
-              const Gap(8),
-              JumTextField(
-                label: 'Study Notes',
-                hint: 'Write private sermon notes or revelations here...',
-                controller: noteController,
-              ),
-              const Gap(16),
-              JumButton(
-                label: 'Save Private Notes',
-                onPressed: () {
-                  setState(() {
-                    if (noteController.text.trim().isNotEmpty) {
-                      _verseNotes[verseNum] = noteController.text.trim();
-                    } else {
-                      _verseNotes.remove(verseNum);
-                    }
-                  });
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Study notes saved successfully.'),
-                      backgroundColor: AppColors.success,
-                    ),
-                  );
-                },
-              ),
-              const Gap(32),
-            ],
+              );
+            },
+            loading: () => const Center(child: CircularProgressIndicator(color: Colors.black)),
+            error: (e, __) => Center(child: Text('Error loading content: $e')),
           ),
-        );
-      },
+          // Floating Bottom Navigator Row
+          Positioned(
+            bottom: 24,
+            left: 24,
+            right: 24,
+            child: booksAsync.maybeWhen(
+              data: (books) {
+                final book = books.firstWhere((b) => b.id == currentBookId);
+                final prevLabel = (currentCh > 1) 
+                    ? '${book.name.toUpperCase()} ${currentCh - 1}' 
+                    : 'PREV';
+                final nextLabel = (currentCh < book.numberOfChapters) 
+                    ? '${book.name.toUpperCase()} ${currentCh + 1}' 
+                    : 'NEXT';
+
+                return Container(
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF2A2A2A) : Colors.white,
+                    borderRadius: BorderRadius.circular(30),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
+                        blurRadius: 20,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(left: 12.0),
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor, size: 20),
+                          onPressed: () => _navigateToChapter(-1, books, currentBookId, currentCh),
+                        ),
+                      ),
+                      Text(
+                        '${book.name.toUpperCase()} $currentCh',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 13, 
+                          fontWeight: FontWeight.w900, 
+                          color: textColor, 
+                          letterSpacing: 0.8,
+                          fontFamily: 'Inter'
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(right: 12.0),
+                        child: IconButton(
+                          icon: Icon(Icons.arrow_forward_ios_rounded, color: textColor, size: 20),
+                          onPressed: () => _navigateToChapter(1, books, currentBookId, currentCh),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              orElse: () => const SizedBox.shrink(),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildHighlightPalette(int verseNum, Color color, String name, IconData icon) {
-    final isSelected = (_verseHighlights[verseNum] == color) || (color == Colors.transparent && !_verseHighlights.containsKey(verseNum));
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          if (color == Colors.transparent) {
-            _verseHighlights.remove(verseNum);
-          } else {
-            _verseHighlights[verseNum] = color;
-          }
-        });
-        Navigator.pop(context);
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.surface : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: isSelected ? AppColors.textPrimary : Colors.transparent, width: 1),
-        ),
-        child: Row(
+  void _showBookChapterPicker(
+    BuildContext context,
+    WidgetRef ref,
+    List<BibleBook> books,
+    String activeBookId,
+    int activeCh,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        padding: const EdgeInsets.all(20),
+        child: Column(
           children: [
-            Icon(icon, color: color == Colors.transparent ? AppColors.textMuted : color, size: 20),
-            const Gap(6),
-            Text(name, style: AppTextStyles.caption.copyWith(color: AppColors.textPrimary)),
+            Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+            ),
+            const Gap(20),
+            const Text('Select Scripture', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const Gap(16),
+            Expanded(
+              child: ListView.builder(
+                itemCount: books.length,
+                itemBuilder: (c, idx) {
+                  final book = books[idx];
+                  final isSelected = book.id == activeBookId;
+                  return ExpansionTile(
+                    initiallyExpanded: isSelected,
+                    title: Text(
+                      book.name,
+                      style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? Colors.black : Colors.black87,
+                      ),
+                    ),
+                    children: [
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(8),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 5,
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                        ),
+                        itemCount: book.numberOfChapters,
+                        itemBuilder: (ctx2, chIdx) {
+                          final chNum = chIdx + 1;
+                          final isChSel = isSelected && (chNum == activeCh);
+                          return InkWell(
+                            onTap: () {
+                              ref.read(currentBookProvider.notifier).state = book.id;
+                              ref.read(currentChapterNumberProvider.notifier).state = chNum;
+                              Navigator.pop(ctx);
+                            },
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isChSel ? Colors.black : Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                '$chNum',
+                                style: TextStyle(
+                                  color: isChSel ? Colors.white : Colors.black87,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // PICKERS ROW
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg, vertical: AppSizes.paddingMd),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedBook,
-                      dropdownColor: AppColors.surface,
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                      items: _books.map((book) {
-                        return DropdownMenuItem<String>(
-                          value: book,
-                          child: Text(book),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedBook = val ?? 'Genesis';
-                          _selectedChapter = 1;
-                        });
-                        _fetchScripture();
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const Gap(12),
-              Expanded(
-                flex: 2,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      value: _selectedChapter,
-                      dropdownColor: AppColors.surface,
-                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                      items: List.generate(_getMaxChapters(_selectedBook), (i) => i + 1).map((ch) {
-                        return DropdownMenuItem<int>(
-                          value: ch,
-                          child: Text('Ch $ch'),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedChapter = val ?? 1;
-                        });
-                        _fetchScripture();
-                      },
-                    ),
-                  ),
-                ),
-              ),
-              const Gap(12),
-              IconButton(
-                icon: const Icon(Icons.tune, color: AppColors.textPrimary),
-                onPressed: _showFontAdjustmentSheet,
-              ),
-            ],
-          ),
-        ),
-        // TRANSLATIONS CHOICE CHIPS
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
-          child: Row(
-            children: [
-              Text('Translation: ', style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary)),
-              const Gap(8),
-              ChoiceChip(
-                label: const Text('KJV'),
-                selected: _activeTranslation == 'KJV',
-                selectedColor: Colors.white,
-                backgroundColor: AppColors.surface,
-                labelStyle: TextStyle(color: _activeTranslation == 'KJV' ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
-                onSelected: (val) {
-                  setState(() => _activeTranslation = 'KJV');
-                  _fetchScripture();
-                },
-              ),
-              const Gap(8),
-              ChoiceChip(
-                label: const Text('YOR'),
-                selected: _activeTranslation == 'YOR',
-                selectedColor: Colors.white,
-                backgroundColor: AppColors.surface,
-                labelStyle: TextStyle(color: _activeTranslation == 'YOR' ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
-                onSelected: (val) {
-                  setState(() => _activeTranslation = 'YOR');
-                  _fetchScripture();
-                },
-              ),
-              const Gap(8),
-              ChoiceChip(
-                label: const Text('FRE'),
-                selected: _activeTranslation == 'FRE',
-                selectedColor: Colors.white,
-                backgroundColor: AppColors.surface,
-                labelStyle: TextStyle(color: _activeTranslation == 'FRE' ? Colors.black : Colors.white, fontWeight: FontWeight.bold),
-                onSelected: (val) {
-                  setState(() => _activeTranslation = 'FRE');
-                  _fetchScripture();
-                },
-              ),
-            ],
-          ),
-        ),
-        const Divider(color: AppColors.border, height: 24),
-        // VERSES DISPLAY
-        Expanded(
-          child: _isLoading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                    color: Colors.white,
-                  ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingLg),
-                  itemCount: _fetchedVerses.length,
-                  itemBuilder: (context, index) {
-                    final verseNum = index + 1;
-                    final verseMap = _fetchedVerses[index];
-                    final primaryText = verseMap[_activeTranslation] ?? '';
-                    final secondaryText = verseMap[_bilingualTranslation] ?? '';
+  void _showTranslationPickerSheet(BuildContext context, WidgetRef ref) {
+    final currentTrans = ref.watch(bibleTranslationProvider);
+    const supported = ['KJV', 'NKJV', 'AMP', 'AMPC', 'TMB', 'TPT', 'NIV', 'NLT', 'TGB', 'BSB'];
 
-                    final isBookmarked = _bookmarkedVerses.contains(verseNum);
-              final highlightColor = _verseHighlights[verseNum];
-              final hasNote = _verseNotes.containsKey(verseNum);
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.paddingLg),
-                child: InkWell(
-                  onLongPress: () => _showVerseActionsSheet(verseNum, verseMap),
-                  onTap: () => _showVerseActionsSheet(verseNum, verseMap),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                  child: JumCard(
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: highlightColor != null ? highlightColor.withOpacity(0.12) : null,
-                        border: isBookmarked ? Border.all(color: Colors.white.withOpacity(0.4), width: 1) : null,
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                '$verseNum',
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                              ),
-                              const Spacer(),
-                              if (isBookmarked) const Icon(Icons.bookmark, size: 14, color: Colors.white),
-                              if (hasNote) ...[
-                                const Gap(6),
-                                const Icon(Icons.note_alt, size: 14, color: AppColors.textSecondary),
-                              ],
-                            ],
-                          ),
-                          const Gap(6),
-                          Text(
-                            primaryText,
-                            style: TextStyle(
-                              color: AppColors.textPrimary,
-                              fontSize: _fontSize,
-                              height: 1.5,
-                            ),
-                          ),
-                          if (_isBilingual && _activeTranslation != _bilingualTranslation) ...[
-                            const Gap(8),
-                            const Divider(color: AppColors.border, height: 1),
-                            const Gap(8),
-                            Text(
-                              secondaryText,
-                              style: TextStyle(
-                                color: AppColors.textSecondary,
-                                fontSize: _fontSize - 1.0,
-                                fontStyle: FontStyle.italic,
-                                height: 1.5,
-                              ),
-                            ),
-                          ],
-                          if (hasNote) ...[
-                            const Gap(8),
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                'Note: ${_verseNotes[verseNum]}',
-                                style: AppTextStyles.caption.copyWith(color: AppColors.textMuted),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => Container(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Select Translation',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
+            ),
+            const Gap(24),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: supported.map((t) => ListTile(
+                  title: Text(t, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                  trailing: currentTrans == t ? const Icon(Icons.check_circle, color: Colors.black87) : null,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 8),
+                  onTap: () {
+                    ref.read(bibleTranslationProvider.notifier).state = t;
+                    Navigator.pop(ctx);
+                  },
+                )).toList(),
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
+    );
+  }
+
+  void _showGeneralSettingsSheet(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => _GeneralSettingsSheetContent(),
     );
   }
 }
 
-// -------------------------------------------------------------
-// READING PLANS TAB (DAILY TRACK PROGRESS & MILESTONES)
-// -------------------------------------------------------------
-class _ReadingPlansTab extends StatefulWidget {
-  const _ReadingPlansTab({Key? key}) : super(key: key);
-
+class _GeneralSettingsSheetContent extends ConsumerWidget {
   @override
-  State<_ReadingPlansTab> createState() => _ReadingPlansTabState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final currentFontSize = ref.watch(bibleFontSizeProvider);
+    final currentFontFamily = ref.watch(bibleFontFamilyProvider);
+    final currentTheme = ref.watch(bibleReadingThemeProvider);
 
-class _ReadingPlansTabState extends State<_ReadingPlansTab> {
-  int _completedDays = 4;
-  final int _totalDays = 14;
-
-  final List<Map<String, dynamic>> _dailyProgress = [
-    {'day': 1, 'scripture': 'Genesis 1-3', 'title': 'The Dawn of Creation', 'checked': true},
-    {'day': 2, 'scripture': 'Genesis 4-6', 'title': 'Covenant Foundations', 'checked': true},
-    {'day': 3, 'scripture': 'Genesis 7-9', 'title': 'The Saving Ark', 'checked': true},
-    {'day': 4, 'scripture': 'Genesis 10-12', 'title': 'The Call of Abraham', 'checked': true},
-    {'day': 5, 'scripture': 'Genesis 13-15', 'title': 'Inheriting The Promise', 'checked': false},
-    {'day': 6, 'scripture': 'Genesis 16-18', 'title': 'Sarah Laughs', 'checked': false},
-    {'day': 7, 'scripture': 'Genesis 19-21', 'title': 'Faith Tested', 'checked': false},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final double completionPercent = _completedDays / _totalDays;
-
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(AppSizes.paddingLg),
+    return Container(
+      padding: const EdgeInsets.all(24),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Plan Hero Header Card
-          JumCard(
-            child: Padding(
-              padding: const EdgeInsets.all(AppSizes.paddingLg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: AppColors.surface,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(Icons.import_contacts, color: Colors.white, size: 28),
-                      ),
-                      const Gap(16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Active Reading Plan',
-                              style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary, letterSpacing: 1.2),
-                            ),
-                            Text(
-                              'Understanding Covenant',
-                              style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Gap(24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Overall Completion Progress',
-                        style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        '${(_completedDays * 100 / _totalDays).toInt()}% completed',
-                        style: AppTextStyles.caption.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                  const Gap(8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: LinearProgressIndicator(
-                      value: completionPercent,
-                      minHeight: 8,
-                      backgroundColor: AppColors.surface,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  ),
-                  const Gap(16),
-                  Text(
-                    'Reading Genesis reveals God\'s absolute faithfulness over thousands of generations. Keep going!',
-                    style: AppTextStyles.caption.copyWith(color: AppColors.textMuted, height: 1.4),
-                  ),
-                ],
-              ),
-            ),
+          const Text(
+            'Reader Settings',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
           ),
           const Gap(24),
-          // Day Breakdown Title
+          const Text('FONT SIZE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+          Row(
+            children: [
+              const Icon(Icons.format_size, size: 16),
+              Expanded(
+                child: Slider(
+                  value: currentFontSize,
+                  min: 14,
+                  max: 32,
+                  activeColor: Colors.black87,
+                  onChanged: (val) {
+                    ref.read(bibleFontSizeProvider.notifier).state = val;
+                  },
+                ),
+              ),
+              const Icon(Icons.format_size, size: 28),
+            ],
+          ),
+          const Gap(16),
+          const Text('FONT TYPE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+          const Gap(8),
+          DropdownButton<String>(
+            isExpanded: true,
+            value: currentFontFamily,
+            items: ['Serif', 'Sans-serif', 'Monospace']
+                .map((f) => DropdownMenuItem(value: f, child: Text(f, style: TextStyle(fontFamily: f))))
+                .toList(),
+            onChanged: (val) {
+              if (val != null) ref.read(bibleFontFamilyProvider.notifier).state = val;
+            },
+          ),
+          const Gap(24),
+          const Text('THEME', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.2)),
+          const Gap(12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Weekly Checklist',
-                style: AppTextStyles.bodyLarge.copyWith(color: AppColors.textPrimary, fontWeight: FontWeight.bold),
-              ),
-              Text(
-                '$_completedDays / $_totalDays Days Done',
-                style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-              ),
+              _themeOption(context, ref, ReadingTheme.light, 'Light', Colors.white, Colors.black),
+              _themeOption(context, ref, ReadingTheme.sepia, 'Sepia', const Color(0xFFFDF6E3), const Color(0xFF586E75)),
+              _themeOption(context, ref, ReadingTheme.dark, 'Dark', const Color(0xFF1E1E1E), Colors.white70),
             ],
           ),
-          const Gap(12),
-          // Checklist Cards
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _dailyProgress.length,
-            itemBuilder: (context, index) {
-              final dayItem = _dailyProgress[index];
-              final isChecked = dayItem['checked'] as bool;
-              final dayNum = dayItem['day'] as int;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: JumCard(
-                  child: InkWell(
-                    onTap: () {
-                      setState(() {
-                        dayItem['checked'] = !isChecked;
-                        if (dayItem['checked']) {
-                          _completedDays++;
-                        } else {
-                          _completedDays--;
-                        }
-                      });
-                    },
-                    borderRadius: BorderRadius.circular(AppSizes.radiusMd),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isChecked ? Colors.white : AppColors.surface,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              'Day $dayNum',
-                              style: AppTextStyles.caption.copyWith(
-                                color: isChecked ? Colors.black : Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          const Gap(16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  dayItem['title'] as String,
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.textPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: isChecked ? TextDecoration.lineThrough : null,
-                                  ),
-                                ),
-                                const Gap(2),
-                                Text(
-                                  dayItem['scripture'] as String,
-                                  style: AppTextStyles.caption.copyWith(color: AppColors.textSecondary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Icon(
-                            isChecked ? Icons.check_box : Icons.check_box_outline_blank,
-                            color: isChecked ? Colors.white : AppColors.textMuted,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
+          const Gap(24),
         ],
       ),
+    );
+  }
+
+  Widget _themeOption(BuildContext context, WidgetRef ref, ReadingTheme target, String label, Color bg, Color text) {
+    final isSelected = ref.watch(bibleReadingThemeProvider) == target;
+    return GestureDetector(
+      onTap: () => ref.read(bibleReadingThemeProvider.notifier).state = target,
+      child: Container(
+        width: MediaQuery.of(context).size.width * 0.27,
+        height: 50,
+        decoration: BoxDecoration(
+          color: bg,
+          border: Border.all(color: isSelected ? Colors.black87 : Colors.grey.shade300, width: isSelected ? 2 : 1),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        alignment: Alignment.center,
+        child: Text(label, style: TextStyle(color: text, fontWeight: FontWeight.bold)),
+      ),
+    );
+  }
+}
+
+class _VerseOptionsSheet extends ConsumerWidget {
+  final String reference;
+  final String content;
+  final String bookId;
+  final int chapterNum;
+  final int verseNum;
+
+  const _VerseOptionsSheet({
+    Key? key,
+    required this.reference,
+    required this.content,
+    required this.bookId,
+    required this.chapterNum,
+    required this.verseNum,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            margin: const EdgeInsets.only(bottom: 24),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          Text(
+            reference.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 12,
+              color: Colors.grey,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+            ),
+          ),
+          const Gap(8),
+          Text(
+            '"$content"',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 16,
+              fontStyle: FontStyle.italic,
+              fontFamily: 'Serif',
+              height: 1.5,
+              color: Colors.black87,
+            ),
+          ),
+          const Gap(24),
+          // Highlight palette with persistence actions
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _circleAction(context, ref, Icons.block, Colors.transparent, true, onTapped: () {
+                ref.read(bibleHighlightsProvider.notifier).setHighlight(bookId, chapterNum, verseNum, null);
+                Navigator.pop(context);
+              }),
+              _circleAction(context, ref, null, const Color(0xFFFFF9C4), false, onTapped: () {
+                ref.read(bibleHighlightsProvider.notifier).setHighlight(bookId, chapterNum, verseNum, const Color(0xFFFBC02D));
+                Navigator.pop(context);
+              }),
+              _circleAction(context, ref, null, const Color(0xFFC8E6C9), false, onTapped: () {
+                ref.read(bibleHighlightsProvider.notifier).setHighlight(bookId, chapterNum, verseNum, const Color(0xFF388E3C));
+                Navigator.pop(context);
+              }),
+              _circleAction(context, ref, null, const Color(0xFFBBDEFB), false, onTapped: () {
+                ref.read(bibleHighlightsProvider.notifier).setHighlight(bookId, chapterNum, verseNum, const Color(0xFF1976D2));
+                Navigator.pop(context);
+              }),
+              _circleAction(context, ref, null, const Color(0xFFF8BBD0), false, onTapped: () {
+                ref.read(bibleHighlightsProvider.notifier).setHighlight(bookId, chapterNum, verseNum, const Color(0xFFC2185B));
+                Navigator.pop(context);
+              }),
+            ],
+          ),
+          const Gap(24),
+          // Menu items container
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              children: [
+                _menuItem(
+                  icon: Icons.notes,
+                  label: 'Add Note',
+                  onTap: () {},
+                ),
+                Divider(height: 1, color: Colors.grey.shade200),
+                _menuItem(
+                  icon: Icons.copy,
+                  label: 'Copy Verse',
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: '$reference: $content'));
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Copied to Clipboard')));
+                  },
+                ),
+                Divider(height: 1, color: Colors.grey.shade200),
+                _menuItem(
+                  icon: Icons.ios_share,
+                  label: 'Share Image',
+                  onTap: () {
+                    Share.share('$reference\n"$content"');
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const Gap(32),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleAction(
+    BuildContext context,
+    WidgetRef ref,
+    IconData? icon,
+    Color color,
+    bool hasBorder, {
+    Color? iconColor,
+    VoidCallback? onTapped,
+  }) {
+    return GestureDetector(
+      onTap: onTapped,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: hasBorder ? Border.all(color: Colors.grey.shade300) : null,
+        ),
+        child: icon != null ? Icon(icon, size: 20, color: iconColor ?? Colors.grey) : null,
+      ),
+    );
+  }
+
+  Widget _menuItem({required IconData icon, required String label, required VoidCallback onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.black54, size: 22),
+      title: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w500, color: Colors.black87, fontSize: 16),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.grey, size: 18),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
     );
   }
 }
