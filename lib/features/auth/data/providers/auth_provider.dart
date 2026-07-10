@@ -1,8 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import '../../../../core/services/clerk_compat.dart' as clerk;
 import '../models/user_model.dart';
 import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/supabase_service.dart';
 
 part 'auth_provider.g.dart';
 
@@ -10,25 +10,29 @@ part 'auth_provider.g.dart';
 class AuthNotifier extends _$AuthNotifier {
   @override
   AsyncValue<UserModel?> build() {
-    try {
-      // In clerk_flutter, Clerk or ClerkAuth is typically used.
-      // We read the current user if available.
-      final clerkUser = clerk.Clerk.instance.currentUser;
-      if (clerkUser != null) {
-        loadUser(clerkUser.id);
-      } else {
-        return const AsyncValue.data(null);
-      }
-    } catch (_) {
-      return const AsyncValue.data(null);
+    // Listen to Supabase auth state changes
+    ref.listen(supabaseClientProvider, (previous, current) {
+      current.auth.onAuthStateChange.listen((data) {
+        if (data.session?.user != null) {
+          loadUser();
+        } else {
+          state = const AsyncValue.data(null);
+        }
+      });
+    });
+
+    final user = ref.watch(supabaseClientProvider).auth.currentUser;
+    if (user != null) {
+      loadUser();
+      return const AsyncValue.loading();
     }
-    return const AsyncValue.loading();
+    return const AsyncValue.data(null);
   }
 
-  Future<void> loadUser(String clerkId) async {
+  Future<void> loadUser() async {
     state = const AsyncValue.loading();
     try {
-      final user = await ref.read(authServiceProvider).fetchCurrentUser(clerkId);
+      final user = await ref.read(authServiceProvider).fetchCurrentUser();
       state = AsyncValue.data(user);
     } catch (e, st) {
       state = AsyncValue.error(e, st);

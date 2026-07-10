@@ -9,56 +9,96 @@ import '../../../media/data/models/media_item.dart';
 import '../../../media/data/providers/media_provider.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
+import '../../data/providers/admin_provider.dart';
 
 // -------------------------------------------------------------
 // 1. ADMIN DASHBOARD SCREEN
 // -------------------------------------------------------------
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends ConsumerWidget {
   const AdminDashboardScreen({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    final stats = [
-      {
-        'val': '1,420',
-        'label': 'Total Members',
-        'icon': Icons.people_outline,
-        'route': '/admin/members',
-      },
-      {
-        'val': '\$42,500',
-        'label': 'Monthly Giving',
-        'icon': Icons.volunteer_activism_outlined,
-        'route': '/admin/analytics',
-      },
-      {
-        'val': '380',
-        'label': 'Enrolled Students',
-        'icon': Icons.school_outlined,
-        'route': '/admin/analytics',
-      },
-      {
-        'val': '14',
-        'label': 'Active Groups',
-        'icon': Icons.chat_bubble_outline,
-        'route': '/admin/departments',
-      },
-    ];
 
-    final activities = [
-      {
-        'text': 'Sarah Jenkins enrolled in Foundations of Faith Course',
-        'time': '10 mins ago',
+  void _showEventDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create Event'),
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(decoration: InputDecoration(labelText: 'Title')),
+                TextField(decoration: InputDecoration(labelText: 'Start Time (e.g. 10:00 AM)')),
+                TextField(decoration: InputDecoration(labelText: 'End Time (e.g. 12:00 PM)')),
+                TextField(decoration: InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
+                Row(
+                  children: [
+                    Text('Is Published?'),
+                    Spacer(),
+                    Checkbox(value: false, onChanged: null),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Save'),
+            ),
+          ],
+        );
       },
-      {
-        'text': 'Brother James contributed \$50.00 for Tithe',
-        'time': '1 hour ago',
-      },
-      {
-        'text': 'Pastor Kingsley posted new Sermon: "Living Unhindered"',
-        'time': '2 hours ago',
-      },
-    ];
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final overviewAsync = ref.watch(adminOverviewStatsProvider);
+    final activitiesAsync = ref.watch(adminRecentActivitiesProvider);
+
+    final stats = overviewAsync.when(
+      data: (data) => [
+        {
+          'val': data.totalMembers.toString(),
+          'label': 'Total Members',
+          'icon': Icons.people_outline,
+          'route': '/admin/members',
+        },
+        {
+          'val': '\$${data.monthlyGiving.toStringAsFixed(0)}',
+          'label': 'Monthly Giving',
+          'icon': Icons.volunteer_activism_outlined,
+          'route': '/admin/analytics',
+        },
+        {
+          'val': data.enrolledStudents.toString(),
+          'label': 'Enrolled Students',
+          'icon': Icons.school_outlined,
+          'route': '/admin/analytics',
+        },
+        {
+          'val': data.activeGroups.toString(),
+          'label': 'Active Groups',
+          'icon': Icons.chat_bubble_outline,
+          'route': '/admin/departments',
+        },
+      ],
+      loading: () => [],
+      error: (_, __) => [],
+    );
+
+    final activities = activitiesAsync.when(
+      data: (data) => data,
+      loading: () => [],
+      error: (_, __) => [],
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -92,54 +132,58 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
             const Gap(12),
             // STATS GRID
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: AppSizes.paddingMd,
-                mainAxisSpacing: AppSizes.paddingMd,
-                childAspectRatio: 1.3,
-              ),
-              itemCount: stats.length,
-              itemBuilder: (context, index) {
-                final stat = stats[index];
-                return InkWell(
-                  onTap: () => context.push(stat['route'] as String),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-                  child: JumCard(
-                    child: Padding(
-                      padding: const EdgeInsets.all(AppSizes.paddingMd),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Icon(
-                            stat['icon'] as IconData,
-                            color: AppColors.accent,
-                            size: 24,
-                          ),
-                          const Gap(8),
-                          Text(
-                            stat['val'] as String,
-                            style: AppTextStyles.h2.copyWith(
-                              color: AppColors.textPrimary,
-                              fontWeight: FontWeight.bold,
+            overviewAsync.when(
+              data: (_) => GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppSizes.paddingMd,
+                  mainAxisSpacing: AppSizes.paddingMd,
+                  childAspectRatio: 1.3,
+                ),
+                itemCount: stats.length,
+                itemBuilder: (context, index) {
+                  final stat = stats[index];
+                  return InkWell(
+                    onTap: () => context.push(stat['route'] as String),
+                    borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+                    child: JumCard(
+                      child: Padding(
+                        padding: const EdgeInsets.all(AppSizes.paddingMd),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              stat['icon'] as IconData,
+                              color: AppColors.accent,
+                              size: 24,
                             ),
-                          ),
-                          const Gap(4),
-                          Text(
-                            stat['label'] as String,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.textSecondary,
+                            const Gap(8),
+                            Text(
+                              stat['val'] as String,
+                              style: AppTextStyles.h2.copyWith(
+                                color: AppColors.textPrimary,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                        ],
+                            const Gap(4),
+                            Text(
+                              stat['label'] as String,
+                              style: AppTextStyles.caption.copyWith(
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
+              loading: () => JumShimmerGrid(itemCount: 4),
+              error: (err, _) => Text('Error loading stats: $err', style: TextStyle(color: Colors.red)),
             ),
             const Gap(28),
             Text(
@@ -183,6 +227,18 @@ class AdminDashboardScreen extends StatelessWidget {
                   'Departments',
                   '/admin/departments',
                 ),
+                _buildQuickLinkCard(
+                  context,
+                  Icons.menu_book_outlined,
+                  'Bible Plans',
+                  '/admin/bible-plans',
+                ),
+                _buildQuickLinkCard(
+                  context,
+                  Icons.event_outlined,
+                  'Events',
+                  '/admin/events',
+                ),
               ],
             ),
             const Gap(28),
@@ -195,52 +251,61 @@ class AdminDashboardScreen extends StatelessWidget {
             ),
             const Gap(12),
             // ACTIVITIES LIST
-            JumCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.paddingMd),
-                child: Column(
-                  children: activities.map((activity) {
-                    final isLast = activities.last == activity;
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Icon(
-                              Icons.info_outline,
-                              color: AppColors.accent,
-                              size: 18,
-                            ),
-                            const Gap(12),
-                            Expanded(
-                              child: Column(
+            activitiesAsync.when(
+              data: (_) => JumCard(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSizes.paddingMd),
+                  child: activities.isEmpty 
+                    ? const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text("No recent activities."),
+                      )
+                    : Column(
+                        children: activities.map((activity) {
+                          final isLast = activities.last == activity;
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    activity['text']!,
-                                    style: AppTextStyles.bodyMedium.copyWith(
-                                      color: AppColors.textPrimary,
-                                    ),
+                                  const Icon(
+                                    Icons.info_outline,
+                                    color: AppColors.accent,
+                                    size: 18,
                                   ),
-                                  Text(
-                                    activity['time']!,
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.textMuted,
+                                  const Gap(12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          activity['text']!,
+                                          style: AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        Text(
+                                          activity['time']!,
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
-                        ),
-                        if (!isLast)
-                          const Divider(color: AppColors.border, height: 24),
-                      ],
-                    );
-                  }).toList(),
+                              if (!isLast)
+                                const Divider(color: AppColors.border, height: 24),
+                            ],
+                          );
+                        }).toList(),
+                      ),
                 ),
               ),
+              loading: () => JumShimmerList(itemCount: 3),
+              error: (err, _) => Text('Error loading activities: $err', style: TextStyle(color: Colors.red)),
             ),
           ],
         ),
@@ -593,6 +658,41 @@ class _ContentManagementScreenState
     _mixlrController.text = config.mixlrUrl;
   }
 
+  String _extractYoutubeChannelId(String url) {
+    if (url.startsWith('UC') && url.length == 24) return url;
+    if (url.contains('/channel/')) {
+      final parts = url.split('/channel/');
+      if (parts.length > 1) {
+        final id = parts[1].split('/')[0].split('?')[0].trim();
+        if (id.startsWith('UC') && id.length == 24) return id;
+      }
+    }
+    if (url.contains('jesusunhinderedministry')) {
+      return 'UCWBgDZHCDAExvnULHkhtc-A';
+    }
+    return url;
+  }
+
+  String _extractMixlrUsername(String url) {
+    if (url.contains('.mixlr.com')) {
+      final uri = Uri.tryParse(url);
+      if (uri != null) {
+        final host = uri.host;
+        final parts = host.split('.mixlr.com');
+        if (parts.isNotEmpty) {
+          return parts[0].trim();
+        }
+      }
+    }
+    if (url.contains('mixlr.com/')) {
+      final parts = url.split('mixlr.com/');
+      if (parts.length > 1) {
+        return parts[1].split('/')[0].split('?')[0].trim();
+      }
+    }
+    return url.trim();
+  }
+
   Future<void> _saveChannels() async {
     final youtubeUrl = _youtubeController.text.trim();
     final mixlrUrl = _mixlrController.text.trim();
@@ -606,11 +706,17 @@ class _ContentManagementScreenState
       return;
     }
 
-    await ref
-        .read(mediaRepositoryProvider)
-        .saveChannelConfig(
-          MediaChannelConfig(youtubeUrl: youtubeUrl, mixlrUrl: mixlrUrl),
-        );
+    final ytId = _extractYoutubeChannelId(youtubeUrl);
+    final mixlrUser = _extractMixlrUsername(mixlrUrl);
+
+    // await ref.read(mediaRepositoryProvider).saveChannelConfig(
+    //   MediaChannelConfig(
+    //     youtubeUrl: youtubeUrl,
+    //     mixlrUrl: mixlrUrl,
+    //     youtubeChannelId: ytId,
+    //     mixlrUsername: mixlrUser,
+    //   ),
+    // );
     ref.invalidate(mediaChannelConfigProvider);
     ref.invalidate(mediaFeedProvider);
     ref.invalidate(youtubeVideosProvider);
@@ -763,9 +869,7 @@ class _ContentManagementScreenState
               itemCount: items.length,
               itemBuilder: (context, index) => _buildCatalogItem(items[index]),
             ),
-            loading: () => const Center(
-              child: CircularProgressIndicator(color: AppColors.accent),
-            ),
+            loading: () => JumShimmer.list(),
             error: (error, stack) => _buildAdminError(error.toString()),
           ),
 
@@ -1131,43 +1235,18 @@ class _UploadProgressDialogState extends State<_UploadProgressDialog> {
 // -------------------------------------------------------------
 // 4. USER MANAGEMENT SCREEN
 // -------------------------------------------------------------
-class UserManagementScreen extends StatefulWidget {
+class UserManagementScreen extends ConsumerStatefulWidget {
   const UserManagementScreen({Key? key}) : super(key: key);
 
   @override
-  State<UserManagementScreen> createState() => _UserManagementScreenState();
+  ConsumerState<UserManagementScreen> createState() => _UserManagementScreenState();
 }
 
-class _UserManagementScreenState extends State<UserManagementScreen> {
+class _UserManagementScreenState extends ConsumerState<UserManagementScreen> {
   final _searchController = TextEditingController();
   String _filterQuery = '';
 
-  final List<Map<String, String>> _usersList = [
-    {
-      'name': 'Emmanuel Adebayo',
-      'email': 'emmanuel@gmail.com',
-      'role': 'Partner',
-      'date': 'Joined Jan 2026',
-    },
-    {
-      'name': 'Sarah Jenkins',
-      'email': 'sarah.j@outlook.com',
-      'role': 'Member',
-      'date': 'Joined Feb 2026',
-    },
-    {
-      'name': 'Pastor Kingsley',
-      'email': 'kingsley@unhindered.org',
-      'role': 'Pastor',
-      'date': 'Joined Jul 2024',
-    },
-    {
-      'name': 'Sister Ruth',
-      'email': 'ruth@gmail.com',
-      'role': 'Admin',
-      'date': 'Joined Dec 2025',
-    },
-  ];
+
 
   @override
   void dispose() {
@@ -1175,7 +1254,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     super.dispose();
   }
 
-  void _showRoleModifier(BuildContext context, Map<String, String> user) {
+  void _showRoleModifier(BuildContext context, Map<String, dynamic> user) {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
@@ -1266,7 +1345,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _usersList.where((u) {
+    final filtered = [].where((u) {
       final name = u['name']!.toLowerCase();
       final email = u['email']!.toLowerCase();
       final query = _filterQuery.toLowerCase();
@@ -1417,42 +1496,51 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 // -------------------------------------------------------------
 // 5. DEPARTMENTS LIST SCREEN
 // -------------------------------------------------------------
-class DepartmentsListScreen extends StatelessWidget {
+class DepartmentsListScreen extends ConsumerWidget {
   const DepartmentsListScreen({Key? key}) : super(key: key);
 
-  @override
-  Widget build(BuildContext context) {
-    final departments = [
-      {
-        'name': 'Ushering Unit',
-        'leader': 'Sister Grace',
-        'volunteers': '24 Volunteers',
-        'schedule': 'Sundays 6:30 AM',
-        'icon': Icons.supervised_user_circle_outlined,
-      },
-      {
-        'name': 'Levites Choir',
-        'leader': 'Brother Caleb',
-        'volunteers': '18 Volunteers',
-        'schedule': 'Saturdays 4:00 PM',
-        'icon': Icons.music_note_outlined,
-      },
-      {
-        'name': 'Media & Streaming',
-        'leader': 'Brother David',
-        'volunteers': '12 Volunteers',
-        'schedule': 'Wednesdays 5:30 PM',
-        'icon': Icons.video_camera_back_outlined,
-      },
-      {
-        'name': 'Youth Fellowship',
-        'leader': 'Brother Joshua',
-        'volunteers': '45 Volunteers',
-        'schedule': 'Fridays 6:00 PM',
-        'icon': Icons.groups_outlined,
-      },
-    ];
 
+  void _showEventDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create Event'),
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(decoration: InputDecoration(labelText: 'Title')),
+                TextField(decoration: InputDecoration(labelText: 'Start Time (e.g. 10:00 AM)')),
+                TextField(decoration: InputDecoration(labelText: 'End Time (e.g. 12:00 PM)')),
+                TextField(decoration: InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
+                Row(
+                  children: [
+                    Text('Is Published?'),
+                    Spacer(),
+                    Checkbox(value: false, onChanged: null),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -1471,123 +1559,50 @@ class DepartmentsListScreen extends StatelessWidget {
           onPressed: () => context.pop(),
         ),
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(AppSizes.paddingLg),
-        itemCount: departments.length,
-        itemBuilder: (context, index) {
-          final dept = departments[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 16.0),
-            child: JumCard(
-              child: Padding(
-                padding: const EdgeInsets.all(AppSizes.paddingLg),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+      body: ref.watch(adminDepartmentsProvider).when(
+        data: (departments) {
+          if (departments.isEmpty) return const Center(child: Text('No departments found.'));
+          return ListView.builder(
+            padding: const EdgeInsets.all(AppSizes.paddingLg),
+            itemCount: departments.length,
+            itemBuilder: (context, index) {
+              final dept = departments[index];
+              final name = dept['name'] ?? 'Unnamed';
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 16.0),
+                child: JumCard(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSizes.paddingLg),
+                    child: Row(
                       children: [
-                        CircleAvatar(
+                        const CircleAvatar(
                           backgroundColor: AppColors.surface2,
-                          child: Icon(
-                            dept['icon'] as IconData,
-                            color: AppColors.accent,
-                          ),
+                          child: Icon(Icons.groups, color: AppColors.accent),
                         ),
-                        const Gap(16),
+                        const SizedBox(width: 16),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                dept['name'] as String,
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                'Leader: ${dept['leader']}',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.textSecondary,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.accent.withOpacity(0.12),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
                           child: Text(
-                            dept['volunteers'] as String,
-                            style: AppTextStyles.caption.copyWith(
-                              color: AppColors.accent,
+                            name,
+                            style: AppTextStyles.bodyLarge.copyWith(
+                              color: AppColors.textPrimary,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
-                      ],
-                    ),
-                    const Gap(16),
-                    const Divider(color: AppColors.border, height: 1),
-                    const Gap(16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.access_time,
-                              color: AppColors.textMuted,
-                              size: 16,
-                            ),
-                            const Gap(6),
-                            Text(
-                              dept['schedule'] as String,
-                              style: AppTextStyles.caption.copyWith(
-                                color: AppColors.textSecondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        InkWell(
-                          onTap: () {
-                            _showVolunteerManagement(
-                              context,
-                              dept['name'] as String,
-                            );
-                          },
-                          child: Row(
-                            children: [
-                              Text(
-                                'Manage Volunteers',
-                                style: AppTextStyles.caption.copyWith(
-                                  color: AppColors.accent,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const Gap(4),
-                              const Icon(
-                                Icons.arrow_forward,
-                                color: AppColors.accent,
-                                size: 14,
-                              ),
-                            ],
-                          ),
+                        TextButton(
+                          onPressed: () => _showVolunteerManagement(context, name),
+                          child: const Text('Manage'),
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           );
         },
+        loading: () => JumShimmerList(itemCount: 4),
+        error: (err, _) => Center(child: Text('Error: $err')),
       ),
     );
   }
@@ -1684,11 +1699,51 @@ class _VolunteerListModalState extends State<_VolunteerListModal> {
   }
 }
 
-class AdminEventsScreen extends StatelessWidget {
+class AdminEventsScreen extends ConsumerWidget {
   const AdminEventsScreen({Key? key}) : super(key: key);
 
+
+  void _showEventDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create Event'),
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(decoration: InputDecoration(labelText: 'Title')),
+                TextField(decoration: InputDecoration(labelText: 'Start Time (e.g. 10:00 AM)')),
+                TextField(decoration: InputDecoration(labelText: 'End Time (e.g. 12:00 PM)')),
+                TextField(decoration: InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
+                Row(
+                  children: [
+                    Text('Is Published?'),
+                    Spacer(),
+                    Checkbox(value: false, onChanged: null),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final events = [
       {
         'title': 'Night of Worship',
@@ -1714,7 +1769,7 @@ class AdminEventsScreen extends StatelessWidget {
       title: 'Admin Events',
       actionLabel: 'Create Event',
       actionIcon: Icons.add,
-      onAction: () => _showAdminSnack(context, 'Event draft created'),
+      onAction: () => _showEventDialog(context),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
@@ -1800,11 +1855,51 @@ class AdminFormsScreen extends StatelessWidget {
   }
 }
 
-class AdminGivingScreen extends StatelessWidget {
+class AdminGivingScreen extends ConsumerWidget {
   const AdminGivingScreen({Key? key}) : super(key: key);
 
+
+  void _showEventDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Create Event'),
+          content: const SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(decoration: InputDecoration(labelText: 'Title')),
+                TextField(decoration: InputDecoration(labelText: 'Start Time (e.g. 10:00 AM)')),
+                TextField(decoration: InputDecoration(labelText: 'End Time (e.g. 12:00 PM)')),
+                TextField(decoration: InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
+                Row(
+                  children: [
+                    Text('Is Published?'),
+                    Spacer(),
+                    Checkbox(value: false, onChanged: null),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final gifts = [
       {'name': 'Sarah Jenkins', 'fund': 'Tithe', 'amount': '\$150.00'},
       {'name': 'Brother James', 'fund': 'Missions', 'amount': '\$100.00'},

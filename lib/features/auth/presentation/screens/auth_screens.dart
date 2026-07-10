@@ -336,15 +336,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final _pageController = PageController();
   final _nameController = TextEditingController(text: 'John Doe');
   final _phoneController = TextEditingController();
-  final _searchController = TextEditingController();
-  String _selectedChurch = '';
   int _currentPage = 0;
-
-  final List<Map<String, String>> _churches = [
-    {'name': 'JUM Lagos Headquarters', 'city': 'Lagos, Nigeria'},
-    {'name': 'JUM Houston Campus', 'city': 'Houston, TX'},
-    {'name': 'JUM London Grace Temple', 'city': 'London, UK'},
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -361,7 +353,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   SmoothPageIndicator(
                     controller: _pageController,
-                    count: 3,
+                    count: 2,
                     effect: const WormEffect(
                       activeDotColor: AppColors.accent,
                       dotColor: AppColors.border,
@@ -386,7 +378,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 children: [
                   _buildStep1(),
                   _buildStep2(),
-                  _buildStep3(),
                 ],
               ),
             ),
@@ -464,121 +455,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   Widget _buildStep2() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingXl),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                'Select Your Church',
-                style: AppTextStyles.h1.copyWith(color: AppColors.textPrimary),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(8),
-              Text(
-                'Join a local campus to stay updated on events',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const Gap(24),
-              JumTextField(
-                label: 'Search Campuses',
-                controller: _searchController,
-                prefix: const Icon(Icons.search, color: AppColors.textMuted),
-              ),
-            ],
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingXl),
-            itemCount: _churches.length,
-            itemBuilder: (context, index) {
-              final church = _churches[index];
-              final isSelected = _selectedChurch == church['name'];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: AppSizes.paddingMd),
-                child: InkWell(
-                  onTap: () => setState(() => _selectedChurch = church['name'] ?? ''),
-                  child: JumCard(
-                    borderColor: isSelected ? AppColors.accent : null,
-                    borderWidth: isSelected ? 1.5 : null,
-                    child: Row(
-                      children: [
-                        const CircleAvatar(
-                          backgroundColor: AppColors.primary,
-                          child: Icon(Icons.church, color: AppColors.accent),
-                        ),
-                        const Gap(16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                church['name']!,
-                                style: AppTextStyles.bodyLarge.copyWith(
-                                  color: AppColors.textPrimary,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                church['city']!,
-                                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                              ),
-                            ],
-                          ),
-                        ),
-                        if (isSelected)
-                          const Icon(Icons.check_circle, color: AppColors.accent),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.all(AppSizes.paddingXl),
-          child: Row(
-            children: [
-              Expanded(
-                child: JumButton(
-                  label: 'Skip',
-                  variant: JumButtonVariant.ghost,
-                  onPressed: () {
-                    _pageController.nextPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                ),
-              ),
-              const Gap(16),
-              Expanded(
-                child: JumButton(
-                  label: 'Join Church',
-                  onPressed: _selectedChurch.isEmpty
-                      ? null
-                      : () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildStep3() {
     return Padding(
       padding: const EdgeInsets.all(AppSizes.paddingXl),
       child: Column(
@@ -610,110 +486,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             onPressed: () => context.go('/home'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// -------------------------------------------------------------
-// CHURCH SELECT SCREEN
-// -------------------------------------------------------------
-class ChurchSelectScreen extends StatefulWidget {
-  const ChurchSelectScreen({Key? key}) : super(key: key);
-
-  @override
-  State<ChurchSelectScreen> createState() => _ChurchSelectScreenState();
-}
-
-class _ChurchSelectScreenState extends State<ChurchSelectScreen> {
-  String _selectedChurch = '';
-
-  final List<Map<String, String>> _churches = [
-    {'name': 'JUM Lagos Headquarters', 'city': 'Lagos, Nigeria'},
-    {'name': 'JUM Houston Campus', 'city': 'Houston, TX'},
-    {'name': 'JUM London Grace Temple', 'city': 'London, UK'},
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      appBar: AppBar(
-        title: const Text('Select Church'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(AppSizes.paddingXl),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Select Campus',
-              style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary),
-            ),
-            const Gap(8),
-            Text(
-              'Please select your preferred campus location.',
-              style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-            ),
-            const Gap(32),
-            Expanded(
-              child: ListView.builder(
-                itemCount: _churches.length,
-                itemBuilder: (context, index) {
-                  final church = _churches[index];
-                  final isSelected = _selectedChurch == church['name'];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSizes.paddingMd),
-                    child: InkWell(
-                      onTap: () => setState(() => _selectedChurch = church['name'] ?? ''),
-                      child: JumCard(
-                        borderColor: isSelected ? AppColors.accent : null,
-                        borderWidth: isSelected ? 1.5 : null,
-                        child: Row(
-                          children: [
-                            const CircleAvatar(
-                              backgroundColor: AppColors.primary,
-                              child: Icon(Icons.church, color: AppColors.accent),
-                            ),
-                            const Gap(16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    church['name']!,
-                                    style: AppTextStyles.bodyLarge.copyWith(
-                                      color: AppColors.textPrimary,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    church['city']!,
-                                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            if (isSelected)
-                              const Icon(Icons.check_circle, color: AppColors.accent),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-            JumButton(
-              label: 'Save Campus',
-              onPressed: _selectedChurch.isEmpty
-                  ? null
-                  : () => context.go('/home'),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -8,8 +8,7 @@ part 'live_provider.g.dart';
 
 @riverpod
 Stream<List<LiveStreamModel>> liveStreamsStream(LiveStreamsStreamRef ref) {
-  final churchId = ref.watch(currentUserProvider).value?.churchId ?? 'jum-church-1';
-  return ref.watch(liveRepositoryProvider).watchActive(churchId);
+  return ref.watch(liveRepositoryProvider).watchActive();
 }
 
 @riverpod

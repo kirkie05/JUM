@@ -18,8 +18,8 @@ final bibleBooksProvider = FutureProvider<List<BibleBook>>((ref) async {
 });
 
 // Holds currently selected state
-final currentBookProvider = StateProvider<String>((ref) => 'GEN');
-final currentChapterNumberProvider = StateProvider<int>((ref) => 1);
+final currentBookProvider = StateProvider<String>((ref) => 'PSA');
+final currentChapterNumberProvider = StateProvider<int>((ref) => 23);
 
 final bibleChapterProvider = FutureProvider<BibleChapter>((ref) async {
   final repo = ref.watch(bibleRepositoryProvider);
@@ -97,4 +97,14 @@ class BibleHighlightsNotifier extends StateNotifier<Map<String, int>> {
 
 final bibleHighlightsProvider = StateNotifierProvider<BibleHighlightsNotifier, Map<String, int>>((ref) {
   return BibleHighlightsNotifier();
+});
+
+// --- LIVE BIBLE TEXT SEARCH PROVIDER ---
+final bibleSearchResultsProvider = FutureProvider.family<List<Map<String, dynamic>>, String>((ref, query) async {
+  if (query.trim().isEmpty) return [];
+  
+  final repo = ref.watch(bibleRepositoryProvider);
+  final trans = ref.watch(bibleTranslationProvider);
+  
+  return repo.searchVerses(query, translation: trans);
 });

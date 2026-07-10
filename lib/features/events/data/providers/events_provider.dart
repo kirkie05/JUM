@@ -10,9 +10,9 @@ final eventsRepositoryProvider = Provider<EventsRepository>((ref) {
   return EventsRepository(client);
 });
 
-final upcomingEventsProvider = FutureProvider.family<List<EventModel>, String>((ref, churchId) async {
+final upcomingEventsProvider = FutureProvider<List<EventModel>>((ref) async {
   final repo = ref.watch(eventsRepositoryProvider);
-  return repo.fetchUpcoming(churchId);
+  return repo.fetchUpcoming();
 });
 
 // A StateNotifier to manage RSVPs dynamically so that newly created RSVPs are updated immediately in the UI.

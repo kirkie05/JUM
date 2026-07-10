@@ -29,7 +29,7 @@ class JumButton extends StatelessWidget {
             width: 20,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
             ),
           )
         : Text(
@@ -45,8 +45,8 @@ class JumButton extends StatelessWidget {
     switch (variant) {
       case JumButtonVariant.primary:
         style = ElevatedButton.styleFrom(
-          backgroundColor: AppColors.accent,
-          foregroundColor: Colors.black,
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusMd),

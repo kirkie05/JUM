@@ -1,7 +1,8 @@
 class MessageModel {
   final String id;
   final String senderId;
-  final String receiverId;
+  final String? receiverId;
+  final String? conversationId;
   final String? groupId;
   final String body;
   final DateTime? readAt;
@@ -10,7 +11,8 @@ class MessageModel {
   MessageModel({
     required this.id,
     required this.senderId,
-    required this.receiverId,
+    this.receiverId,
+    this.conversationId,
     this.groupId,
     required this.body,
     this.readAt,
@@ -23,7 +25,8 @@ class MessageModel {
     return MessageModel(
       id: json['id'] as String? ?? '',
       senderId: json['sender_id'] as String? ?? json['senderId'] as String? ?? '',
-      receiverId: json['receiver_id'] as String? ?? json['receiverId'] as String? ?? '',
+      receiverId: json['receiver_id'] as String? ?? json['receiverId'] as String?,
+      conversationId: json['conversation_id'] as String? ?? json['conversationId'] as String?,
       groupId: json['group_id'] as String? ?? json['groupId'] as String?,
       body: json['body'] as String? ?? '',
       readAt: json['read_at'] != null ? DateTime.parse(json['read_at'] as String) : (json['readAt'] != null ? DateTime.parse(json['readAt'] as String) : null),
@@ -36,6 +39,7 @@ class MessageModel {
       'id': id,
       'sender_id': senderId,
       'receiver_id': receiverId,
+      'conversation_id': conversationId,
       'group_id': groupId,
       'body': body,
       'read_at': readAt?.toIso8601String(),

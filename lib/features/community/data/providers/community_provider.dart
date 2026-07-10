@@ -10,9 +10,7 @@ part 'community_provider.g.dart';
 
 @riverpod
 Stream<List<PostModel>> communityFeed(CommunityFeedRef ref) {
-  final churchId = ref.watch(currentUserProvider).value?.churchId ?? '';
-  if (churchId.isEmpty) return const Stream.empty();
-  return ref.watch(communityRepositoryProvider).watchFeed(churchId);
+  return ref.watch(communityRepositoryProvider).watchFeed();
 }
 
 @riverpod
@@ -39,7 +37,6 @@ class CreatePostNotifier extends _$CreatePostNotifier {
       }
       await ref.read(communityRepositoryProvider).createPost(
         userId: user.id,
-        churchId: user.churchId,
         body: body,
         mediaUrl: mediaUrl,
         mediaType: mediaFile != null ? 'image' : null,

@@ -6,7 +6,7 @@ part of 'sermon_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$sermonsHash() => r'eb6cf1b5986dbda28af4414fd0a6965b5a4e632f';
+String _$sermonsHash() => r'5a7bac02ee67388219b35d8b10b6997467bea324';
 
 /// See also [sermons].
 @ProviderFor(sermons)
@@ -23,8 +23,24 @@ final sermonsProvider = AutoDisposeFutureProvider<List<SermonModel>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SermonsRef = AutoDisposeFutureProviderRef<List<SermonModel>>;
+String _$latestSermonHash() => r'4a0764970dc4880b9324a00e81daae0092aa7aff';
+
+/// See also [LatestSermon].
+@ProviderFor(LatestSermon)
+final latestSermonProvider =
+    AutoDisposeAsyncNotifierProvider<LatestSermon, SermonModel?>.internal(
+      LatestSermon.new,
+      name: r'latestSermonProvider',
+      debugGetCreateSourceHash: const bool.fromEnvironment('dart.vm.product')
+          ? null
+          : _$latestSermonHash,
+      dependencies: null,
+      allTransitiveDependencies: null,
+    );
+
+typedef _$LatestSermon = AutoDisposeAsyncNotifier<SermonModel?>;
 String _$sermonPlayerNotifierHash() =>
-    r'9057173515f54f475a19b60b8117a75a62554142';
+    r'c0cd7d7bbfc290fcf5d9a3670559c4bee68f8f8a';
 
 /// See also [SermonPlayerNotifier].
 @ProviderFor(SermonPlayerNotifier)
@@ -44,7 +60,7 @@ final sermonPlayerNotifierProvider =
 
 typedef _$SermonPlayerNotifier = AutoDisposeNotifier<SermonPlayerState>;
 String _$sermonSearchNotifierHash() =>
-    r'7810f7c049ff877c959640b885ebf06cdea2f26c';
+    r'46efc81b3fff810697abc17044977bfb28eb33e3';
 
 /// See also [SermonSearchNotifier].
 @ProviderFor(SermonSearchNotifier)

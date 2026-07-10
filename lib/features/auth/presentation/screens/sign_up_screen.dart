@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
-import '../../../../core/services/clerk_compat.dart' as clerk;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -11,6 +11,7 @@ import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_text_field.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/glass_mesh_background.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../data/providers/auth_provider.dart';
 
 class SignUpScreen extends ConsumerStatefulWidget {
@@ -48,12 +49,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
-      // Initiate Clerk email OTP sign up
-      await clerk.Clerk.instance.signUp(
-        firstName: firstName,
-        lastName: _lastNameController.text.trim(),
-        emailAddress: email,
-      );
+      await ref.read(supabaseClientProvider).auth.signInWithOtp(email: email);
       setState(() => _codeSent = true);
     } catch (e) {
       setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
@@ -64,6 +60,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
 
   Future<void> _verifyOtp() async {
     final code = _otpController.text.trim();
+    final email = _emailController.text.trim();
+    
     if (code.isEmpty) {
       setState(() => _errorMessage = 'Please enter the verification code');
       return;
@@ -75,9 +73,21 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     });
 
     try {
-      final user = await clerk.Clerk.instance.verifySignUp(code: code);
-      if (user != null) {
-        await ref.read(authNotifierProvider.notifier).loadUser(user.id);
+      final res = await ref.read(supabaseClientProvider).auth.verifyOTP(
+            email: email,
+            token: code,
+            type: OtpType.magiclink,
+          );
+      
+      if (res.session != null) {
+        // Update profile name
+        final firstName = _firstNameController.text.trim();
+        final lastName = _lastNameController.text.trim();
+        final fullName = '$firstName $lastName'.trim();
+        
+        await ref.read(supabaseClientProvider).from('profiles').update({
+          'name': fullName,
+        }).eq('id', res.session!.user.id);
         
         if (!mounted) return;
         context.go('/onboarding');
@@ -94,7 +104,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Surface Grey as per DESIGN.md
+      backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -105,7 +115,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Branding Header
                   Column(
                     children: [
                       const Text(
@@ -124,7 +133,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16.0,
-                          color: Color(0xFF6B7280), // Neutral Grey
+                          color: Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -132,7 +141,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   
                   const Gap(32),
                   
-                  // Sign Up Card
                   JumCard(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
@@ -175,7 +183,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                           ElevatedButton(
                             onPressed: _signUp,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF000000), // Primary Black
+                              backgroundColor: const Color(0xFF000000),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -281,7 +289,6 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   
                   const Gap(24),
                   
-                  // Already have an account Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

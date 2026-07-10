@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:gap/gap.dart';
-import '../../../../core/services/clerk_compat.dart' as clerk;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -11,7 +11,7 @@ import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_text_field.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/glass_mesh_background.dart';
-import '../../../../core/services/auth_service.dart';
+import '../../../../core/services/supabase_service.dart';
 import '../../data/providers/auth_provider.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -41,11 +41,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      // Initiate Clerk email OTP sign in
-      await clerk.Clerk.instance.signIn(
-        strategy: clerk.Strategy.emailCode,
-        identifier: email,
-      );
+      await ref.read(supabaseClientProvider).auth.signInWithOtp(email: email);
       setState(() => _codeSent = true);
     } catch (e) {
       setState(() => _errorMessage = e.toString().replaceAll('Exception: ', ''));
@@ -56,6 +52,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   Future<void> _verifyOtp() async {
     final code = _otpController.text.trim();
+    final email = _emailController.text.trim();
     if (code.isEmpty) {
       setState(() => _errorMessage = 'Please enter the verification code');
       return;
@@ -67,25 +64,16 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
     });
 
     try {
-      final user = await clerk.Clerk.instance.verifySignIn(code: code);
-      if (user != null) {
-        await ref.read(authNotifierProvider.notifier).loadUser(user.id);
-        
+      final res = await ref.read(supabaseClientProvider).auth.verifyOTP(
+            email: email,
+            token: code,
+            type: OtpType.magiclink,
+          );
+      
+      if (res.session != null) {
         if (!mounted) return;
-        
-        final supabaseUser = await ref
-            .read(authServiceProvider)
-            .fetchCurrentUser(user.id);
-            
-        if (!mounted) return;
-
-        if (supabaseUser == null) {
-          context.go('/onboarding');
-        } else if (supabaseUser.churchId == null || supabaseUser.churchId.isEmpty) {
-          context.go('/church-select');
-        } else {
-          context.go('/home');
-        }
+        // The auth_provider will auto load user via onAuthStateChange
+        context.go('/home');
       } else {
         setState(() => _errorMessage = 'Verification failed');
       }
@@ -99,7 +87,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB), // Surface Grey as per DESIGN.md
+      backgroundColor: const Color(0xFFF9FAFB),
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -110,7 +98,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Branding Header
                   Column(
                     children: [
                       const Text(
@@ -129,7 +116,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 16.0,
-                          color: Color(0xFF6B7280), // Neutral Grey
+                          color: Color(0xFF6B7280),
                         ),
                       ),
                     ],
@@ -137,7 +124,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   
                   const Gap(32),
                   
-                  // Login Card Container
                   JumCard(
                     padding: const EdgeInsets.all(24.0),
                     child: Column(
@@ -155,7 +141,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                           ElevatedButton(
                             onPressed: _sendOtp,
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF000000), // Primary Black
+                              backgroundColor: const Color(0xFF000000),
                               foregroundColor: Colors.white,
                               elevation: 0,
                               padding: const EdgeInsets.symmetric(vertical: 16.0),
@@ -261,7 +247,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   
                   const Gap(24),
                   
-                  // Join JUM Footer Link
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -290,7 +275,6 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                   
                   const Gap(24),
                   
-                  // Secure Login indicators
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [

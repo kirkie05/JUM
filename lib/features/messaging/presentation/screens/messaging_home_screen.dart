@@ -8,6 +8,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_avatar.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_empty_state.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/providers/messaging_providers.dart';
 
 class MessagingHomeScreen extends ConsumerWidget {
@@ -136,7 +137,7 @@ class MessagingHomeScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => JumShimmer.list(),
         error: (e, st) => const Center(child: Text('Failed to load conversations', style: TextStyle(color: AppColors.error))),
       ),
     );
@@ -204,7 +205,7 @@ class MessagingHomeScreen extends ConsumerWidget {
                           },
                         );
                       },
-                      loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+                      loading: () => JumShimmer.list(),
                       error: (e, st) => const Center(child: Text('Failed to load contacts', style: TextStyle(color: AppColors.error))),
                     ),
                   ),

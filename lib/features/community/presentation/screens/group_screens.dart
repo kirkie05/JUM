@@ -13,6 +13,9 @@ import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_text_field.dart';
 import '../../../../shared/widgets/jum_avatar.dart';
+import '../../../../shared/widgets/jum_error_state.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
+import '../../../messaging/data/providers/messaging_providers.dart';
 
 // -------------------------------------------------------------
 // STANDALONE CREATE POST SCREEN
@@ -53,7 +56,6 @@ class _CreatePostScreenState extends ConsumerState<CreatePostScreen> {
     try {
       await ref.read(communityRepositoryProvider).createPost(
         userId: currentUser.id,
-        churchId: currentUser.churchId ?? 'default_church',
         body: body,
         mediaUrl: _mediaFile?.path,
         mediaType: _mediaType,
@@ -314,31 +316,43 @@ class GroupsListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final groups = [
       {
-        'name': 'Grace & Mercy Fellowship',
-        'desc': 'Weekly study on growing in grace, mercy, and prayer.',
-        'members': '28 Members',
-        'nextMeeting': 'Today, 6:00 PM',
+        'id': '520e8466-0b26-5818-9eb7-99b4c5224c39',
+        'name': 'Youth Leaders Board',
+        'desc': 'Vibrant fellowship for youths, students, and young professionals. Ignite & Shine.',
+        'members': '45 Members',
+        'nextMeeting': 'Friday, 5:30 PM',
         'isJoined': true,
       },
       {
-        'name': 'Youth On Fire',
-        'desc': 'Passionate young believers seeking revival in Lagos.',
-        'members': '45 Members',
-        'nextMeeting': 'Friday, 5:30 PM',
-        'isJoined': false,
+        'id': '4ef472d6-dd53-5d6a-b65b-8d4d25817637',
+        'name': 'Levites Choir General',
+        'desc': 'Sanctuary choir leading praise, worship, and vocal ministrations during services.',
+        'members': '32 Members',
+        'nextMeeting': 'Sunday, 4:00 PM',
+        'isJoined': true,
       },
       {
-        'name': 'Men of Valor',
-        'desc': 'Empowering men to lead spiritually in homes & marketplaces.',
+        'id': 'ad5c3f26-2327-5246-88f0-f70b4a58d37f',
+        'name': 'Media Technical Crew',
+        'desc': 'Technical service unit managing sound, video recording, live feeds, and screens.',
         'members': '18 Members',
         'nextMeeting': 'Saturday, 8:00 AM',
         'isJoined': false,
       },
       {
-        'name': 'Women of Wisdom',
-        'desc': 'Nurturing prayer warriors, wives, and professional leaders.',
-        'members': '32 Members',
-        'nextMeeting': 'Sunday, 4:00 PM',
+        'id': '71a132e8-58e4-5b09-a16d-8696954e72fd',
+        'name': 'Ushering Leaders',
+        'desc': 'Service unit ensuring orderliness, ushering guests, and maintaining sanctuary decorum.',
+        'members': '28 Members',
+        'nextMeeting': 'Today, 6:00 PM',
+        'isJoined': false,
+      },
+      {
+        'id': '4b1ee666-11a2-576d-bc93-610325103069',
+        'name': 'Missions Committee',
+        'desc': 'Evangelism and community welfare outreach organizing local campaigns and food drives.',
+        'members': '15 Members',
+        'nextMeeting': 'Wednesday, 7:00 PM',
         'isJoined': false,
       },
     ];
@@ -430,7 +444,9 @@ class GroupsListScreen extends StatelessWidget {
                       const Gap(12),
                       Expanded(
                         child: OutlinedButton(
-                          onPressed: () => context.push('/community/groups/chat'),
+                          onPressed: () => context.push(
+                            '/community/groups/chat/${group['id']}?name=${Uri.encodeComponent(group['name'] as String)}',
+                          ),
                           style: OutlinedButton.styleFrom(
                             side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
@@ -615,119 +631,163 @@ class _GroupFeedScreenState extends State<GroupFeedScreen> {
 // -------------------------------------------------------------
 // SMALL GROUP REAL-TIME CHAT SCREEN
 // -------------------------------------------------------------
-class GroupChatScreen extends StatefulWidget {
-  const GroupChatScreen({Key? key}) : super(key: key);
+class GroupChatScreen extends ConsumerStatefulWidget {
+  final String conversationId;
+  final String groupName;
+
+  const GroupChatScreen({
+    Key? key,
+    required this.conversationId,
+    required this.groupName,
+  }) : super(key: key);
 
   @override
-  State<GroupChatScreen> createState() => _GroupChatScreenState();
+  ConsumerState<GroupChatScreen> createState() => _GroupChatScreenState();
 }
 
-class _GroupChatScreenState extends State<GroupChatScreen> {
+class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
   final _msgController = TextEditingController();
-  final List<Map<String, dynamic>> _messages = [
-    {
-      'sender': 'Brother John',
-      'isMe': false,
-      'body': 'Good evening saints! Let\'s begin our virtual fellowship now.',
-      'time': '6:00 PM',
-    },
-    {
-      'sender': 'Sister Ruth',
-      'isMe': false,
-      'body': 'Praise God! I\'m online and ready.',
-      'time': '6:02 PM',
-    },
-    {
-      'sender': 'Emmanuel',
-      'isMe': true,
-      'body': 'Amen! Excited to dive into Ephesians tonight.',
-      'time': '6:03 PM',
-    },
-  ];
+  final ScrollController _scrollController = ScrollController();
 
-  void _send() {
+  void _send() async {
     final txt = _msgController.text.trim();
     if (txt.isEmpty) return;
-    setState(() {
-      _messages.add({
-        'sender': 'Emmanuel',
-        'isMe': true,
-        'body': txt,
-        'time': '6:05 PM',
-      });
-      _msgController.clear();
-    });
+
+    _msgController.clear();
+    try {
+      await ref.read(sendMessageNotifierProvider.notifier).sendGroupMessage(
+        widget.conversationId,
+        txt,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send message: $e')),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _msgController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  String _formatDateTime(DateTime dt) {
+    final localDt = dt.toLocal();
+    final hour = localDt.hour == 0 ? 12 : (localDt.hour > 12 ? localDt.hour - 12 : localDt.hour);
+    final minute = localDt.minute.toString().padLeft(2, '0');
+    final amPm = localDt.hour >= 12 ? 'PM' : 'AM';
+    return '$hour:$minute $amPm';
   }
 
   @override
   Widget build(BuildContext context) {
+    final messagesAsync = ref.watch(groupConversationProvider(widget.conversationId));
+    final currentUser = ref.watch(currentUserProvider).value;
+    final currentUserId = currentUser?.id ?? '';
+
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: const JumAppBar(
-        title: 'Youth On Fire Chat',
+      appBar: JumAppBar(
+        title: widget.groupName,
         showBack: true,
       ),
       body: Column(
         children: [
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(24.0),
-              itemCount: _messages.length,
-              itemBuilder: (context, index) {
-                final m = _messages[index];
-                return Align(
-                  alignment: m['isMe'] ? Alignment.centerRight : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 12.0),
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
-                    constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
-                    decoration: BoxDecoration(
-                      color: m['isMe'] ? AppColors.primary : AppColors.surface,
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(16.0),
-                        topRight: const Radius.circular(16.0),
-                        bottomLeft: m['isMe'] ? const Radius.circular(16.0) : Radius.zero,
-                        bottomRight: m['isMe'] ? Radius.zero : const Radius.circular(16.0),
-                      ),
-                      border: Border.all(color: AppColors.border, width: 0.5),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (!m['isMe'])
-                          Text(
-                            m['sender']!,
-                            style: const TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 11.0,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        if (!m['isMe']) const Gap(4),
-                        Text(
-                          m['body']!,
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 14.0,
-                            color: m['isMe'] ? Colors.white : AppColors.textPrimary,
-                          ),
-                        ),
-                        const Gap(4),
-                        Align(
-                          alignment: Alignment.bottomRight,
-                          child: Text(
-                            m['time']!,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              fontSize: 10.0,
-                              color: m['isMe'] ? Colors.white70 : AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+            child: messagesAsync.when(
+              loading: () => JumShimmer.list(),
+              error: (err, _) {
+                debugPrint('[GROUP_CHAT] Error loading messages: $err');
+                return Center(
+                  child: JumErrorState(
+                    message: 'Failed to load messages. Please try again.',
+                    onRetry: () => ref.invalidate(groupConversationProvider(widget.conversationId)),
                   ),
+                );
+              },
+              data: (messages) {
+                if (messages.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No messages yet. Say hello to start the fellowship!',
+                      style: TextStyle(color: AppColors.textMuted),
+                    ),
+                  );
+                }
+
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(_scrollController.position.maxScrollExtent);
+                  }
+                });
+
+                return ListView.builder(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.all(24.0),
+                  itemCount: messages.length,
+                  itemBuilder: (context, index) {
+                    final m = messages[index];
+                    final isMe = m.senderId == currentUserId;
+
+                    return Align(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      child: Container(
+                        margin: const EdgeInsets.only(bottom: 12.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+                        decoration: BoxDecoration(
+                          color: isMe ? AppColors.primary : AppColors.surface,
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(16.0),
+                            topRight: const Radius.circular(16.0),
+                            bottomLeft: isMe ? const Radius.circular(16.0) : Radius.zero,
+                            bottomRight: isMe ? Radius.zero : const Radius.circular(16.0),
+                          ),
+                          border: Border.all(color: AppColors.border, width: 0.5),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (!isMe)
+                              const Text(
+                                'Group Member',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 11.0,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.accent,
+                                ),
+                              ),
+                            if (!isMe) const Gap(4),
+                            Text(
+                              m.body,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 14.0,
+                                color: isMe ? Colors.white : AppColors.textPrimary,
+                              ),
+                            ),
+                            const Gap(4),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Text(
+                                _formatDateTime(m.createdAt),
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  fontSize: 10.0,
+                                  color: isMe ? Colors.white70 : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
                 );
               },
             ),

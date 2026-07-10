@@ -8,9 +8,7 @@ part 'marketplace_providers.g.dart';
 
 @riverpod
 Future<List<ProductModel>> products(ProductsRef ref) {
-  final currentUser = ref.watch(currentUserProvider).value;
-  final churchId = currentUser?.churchId ?? 'jum-church-1';
-  return ref.watch(marketplaceRepositoryProvider).fetchProducts(churchId);
+  return ref.watch(marketplaceRepositoryProvider).fetchProducts();
 }
 
 @riverpod

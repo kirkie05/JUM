@@ -11,6 +11,7 @@ import '../../../../shared/widgets/jum_app_bar.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_empty_state.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/stream_model.dart';
 import '../../data/providers/live_provider.dart';
 
@@ -28,7 +29,7 @@ class LiveStreamScreen extends ConsumerWidget {
         showBack: false,
       ),
       body: liveStreamsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => JumShimmer.list(),
         error: (err, stack) => Center(
           child: Text(
             'Error loading stream details: $err',
@@ -41,7 +42,6 @@ class LiveStreamScreen extends ConsumerWidget {
             (s) => s.status == 'active',
             orElse: () => LiveStreamModel(
               id: '',
-              churchId: '',
               muxStreamId: '',
               muxPlaybackId: '',
               title: '',

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/jum_app_shell.dart';
 
@@ -8,7 +9,7 @@ import '../../features/auth/presentation/screens/welcome_screen.dart';
 import '../../features/auth/presentation/screens/sign_in_screen.dart';
 import '../../features/auth/presentation/screens/sign_up_screen.dart';
 import '../../features/auth/presentation/screens/auth_screens.dart'
-    show OnboardingScreen, ChurchSelectScreen;
+    show OnboardingScreen;
 import '../../features/home/presentation/screens/home_screens.dart';
 import '../../features/home/presentation/screens/search_screens.dart';
 import '../../features/home/presentation/screens/notification_screens.dart';
@@ -20,16 +21,20 @@ import '../../features/giving/presentation/screens/giving_screens.dart';
 import '../../features/gospel_army/presentation/screens/gospel_army_screens.dart';
 import '../../features/events/presentation/screens/event_screens.dart';
 import '../../features/bible/presentation/screens/bible_screens.dart';
+import '../../features/bible/presentation/screens/bible_reading_plan_screen.dart';
 import '../../features/messaging/presentation/screens/messaging_screens.dart';
 import '../../features/marketplace/presentation/screens/marketplace_screens.dart';
 import '../../features/profile/presentation/screens/profile_screens.dart';
 import '../../features/admin/presentation/screens/admin_screens.dart';
+import '../../features/admin/presentation/screens/admin_reading_plans_screen.dart';
 import '../../features/forms/presentation/screens/form_screens.dart';
 import '../../features/live/presentation/screens/live_stream_screen.dart';
 import '../../features/live/presentation/screens/live_watch_screen.dart';
+import '../../features/media/data/models/media_item.dart';
+import '../../features/media/presentation/screens/media_player_screen.dart';
 
 final appRouter = GoRouter(
-  initialLocation: '/',
+  initialLocation: kIsWeb ? '/admin' : '/',
   routes: [
     // Auth routes
     GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
@@ -48,10 +53,6 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/sign-up',
       builder: (context, state) => const SignUpScreen(),
-    ),
-    GoRoute(
-      path: '/church-select',
-      builder: (context, state) => const ChurchSelectScreen(),
     ),
 
     // ShellRoute for BottomNav/LeftNav/TopNav
@@ -138,6 +139,20 @@ final appRouter = GoRouter(
           path: '/home/more',
           builder: (context, state) => const MoreMenuScreen(),
         ),
+        GoRoute(
+          path: '/events',
+          builder: (context, state) => const EventListScreen(),
+        ),
+        GoRoute(
+          path: '/events/:id',
+          builder: (context, state) =>
+              EventDetailScreen(eventId: state.pathParameters['id'] ?? ''),
+        ),
+        GoRoute(
+          path: '/events/:id/ticket',
+          builder: (context, state) =>
+              TicketQrScreen(eventId: state.pathParameters['id'] ?? ''),
+        ),
       ],
     ),
 
@@ -160,8 +175,11 @@ final appRouter = GoRouter(
       builder: (context, state) => const GroupFeedScreen(),
     ),
     GoRoute(
-      path: '/community/groups/chat',
-      builder: (context, state) => const GroupChatScreen(),
+      path: '/community/groups/chat/:id',
+      builder: (context, state) => GroupChatScreen(
+        conversationId: state.pathParameters['id'] ?? '',
+        groupName: state.uri.queryParameters['name'] ?? 'Group Chat',
+      ),
     ),
     GoRoute(
       path: '/sermons/:id',
@@ -191,6 +209,13 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/media/stream-schedule',
       builder: (context, state) => const StreamScheduleScreen(),
+    ),
+    GoRoute(
+      path: '/media/player',
+      builder: (context, state) {
+        final item = state.extra as MediaItem;
+        return MediaPlayerScreen(item: item);
+      },
     ),
     GoRoute(
       path: '/media/service-schedule',
@@ -229,22 +254,16 @@ final appRouter = GoRouter(
       ),
     ),
     GoRoute(
-      path: '/events',
-      builder: (context, state) => const EventListScreen(),
-    ),
-    GoRoute(
-      path: '/events/:id',
-      builder: (context, state) =>
-          EventDetailScreen(eventId: state.pathParameters['id'] ?? ''),
-    ),
-    GoRoute(
-      path: '/events/:id/ticket',
-      builder: (context, state) =>
-          TicketQrScreen(eventId: state.pathParameters['id'] ?? ''),
+      path: '/bible/search',
+      builder: (context, state) => const BibleSearchScreen(),
     ),
     GoRoute(
       path: '/bible',
       builder: (context, state) => const BibleReaderScreen(),
+    ),
+    GoRoute(
+      path: '/bible/reading-plan',
+      builder: (context, state) => const BibleReadingPlanScreen(),
     ),
     GoRoute(
       path: '/messaging',
@@ -346,9 +365,19 @@ final appRouter = GoRouter(
       path: '/admin/settings',
       builder: (context, state) => const AdminSettingsScreen(),
     ),
+    GoRoute(
+      path: '/admin/bible-plans',
+      builder: (context, state) => const AdminReadingPlansScreen(),
+    ),
   ],
   redirect: (context, state) {
-    // Standard redirect placeholder
+    // If accessing via Web, force the user into the Admin dashboard zone.
+    if (kIsWeb) {
+      final currentPath = state.uri.toString();
+      if (!currentPath.startsWith('/admin')) {
+        return '/admin';
+      }
+    }
     return null;
   },
 );

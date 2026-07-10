@@ -8,7 +8,6 @@ abstract class LiveStreamModel with _$LiveStreamModel {
   @JsonSerializable(fieldRename: FieldRename.snake)
   const factory LiveStreamModel({
     required String id,
-    required String churchId,
     required String muxStreamId,
     required String muxPlaybackId,
     required String title,

@@ -9,7 +9,6 @@ abstract class PostModel with _$PostModel {
   const factory PostModel({
     required String id,
     required String userId,
-    required String churchId,
     required String body,
     String? mediaUrl,
     String? mediaType,

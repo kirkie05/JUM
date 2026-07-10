@@ -105,3 +105,39 @@ class JumShimmer extends StatelessWidget {
     );
   }
 }
+
+class JumShimmerList extends StatelessWidget {
+  final int itemCount;
+  const JumShimmerList({Key? key, this.itemCount = 3}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.builder(
+      itemCount: itemCount,
+      itemBuilder: (context, index) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+        child: JumShimmer.card(height: 80),
+      ),
+    );
+  }
+}
+
+class JumShimmerGrid extends StatelessWidget {
+  final int itemCount;
+  const JumShimmerGrid({Key? key, this.itemCount = 4}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      itemCount: itemCount,
+      itemBuilder: (context, index) => JumShimmer.card(height: 120),
+    );
+  }
+}

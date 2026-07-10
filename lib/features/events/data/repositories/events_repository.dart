@@ -9,90 +9,166 @@ class EventsRepository {
 
   EventsRepository(this._supabase);
 
-  // Fallback mock events for high-fidelity offline preview and resilient testing
-  final List<EventModel> _mockEvents = [
-    EventModel(
-      id: 'event-1',
-      churchId: 'jum-church-1',
-      title: 'Unhindered Worship Night',
-      description: 'Join us for a transformational night of pure, unhindered praise, worship, and spiritual renewal. Come with an open heart to receive and encounter God like never before.',
-      date: DateTime.now().add(const Duration(days: 2, hours: 4)),
-      location: 'Lagos HQ Main Sanctuary',
-      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=800&q=80',
-      isPaid: false,
-      ticketPrice: 0.0,
-    ),
-    EventModel(
-      id: 'event-2',
-      churchId: 'jum-church-1',
-      title: 'Youth Grace Summit 2026',
-      description: 'A power-packed weekend of empowerment, career development, panel sessions, and deep spiritual infilling designed for the next generation of leaders.',
-      date: DateTime.now().add(const Duration(days: 5)),
-      location: 'Houston Campus Hall A',
-      coverUrl: 'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&w=800&q=80',
-      isPaid: true,
-      ticketPrice: 5000.0,
-    ),
-    EventModel(
-      id: 'event-3',
-      churchId: 'jum-church-1',
-      title: 'Couples Prayer Breakfast',
-      description: 'An intimate fellowship breakfast for couples to align in prayers, receive counsel on marriage, and connect with other families in a grace-filled environment.',
-      date: DateTime.now().add(const Duration(days: 8, hours: 2)),
-      location: 'London Grace Fellowship',
-      coverUrl: 'https://images.unsplash.com/photo-1469041134994-521628367ae6?auto=format&fit=crop&w=800&q=80',
-      isPaid: true,
-      ticketPrice: 7500.0,
-    ),
-    EventModel(
-      id: 'event-4',
-      churchId: 'jum-church-1',
-      title: 'Miracle & Healing Crusade',
-      description: 'Prepare to receive supernatural breakthroughs, healings, and life-changing deliverances under the ministry of God\'s servants.',
-      date: DateTime.now().add(const Duration(days: 12)),
-      location: 'Lagos Crusade Ground',
-      coverUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=800&q=80',
-      isPaid: false,
-      ticketPrice: 0.0,
-    ),
-  ];
-
-  final Map<String, RsvpModel> _inMemoryRsvps = {};
-
-  Future<List<EventModel>> fetchUpcoming(String churchId) async {
+  Future<List<EventModel>> fetchUpcoming() async {
+    // 1. Seed if table is empty
     try {
-      final response = await _supabase
+      final countCheck = await _supabase
           .from('events')
-          .select()
-          .eq('church_id', churchId)
-          .gte('date', DateTime.now().toIso8601String())
-          .order('date', ascending: true);
-
-      if (response != null && (response as List).isNotEmpty) {
-        return (response as List).map((json) => EventModel.fromJson(json)).toList();
+          .select('id')
+          .limit(1);
+      if (countCheck.isEmpty) {
+        await _seedDefaultEvents();
       }
     } catch (e) {
-      // Graceful fallback to rich mock data
+      print('[EVENTS_REPO] Auto-seed check failed: $e');
     }
-    return _mockEvents.where((e) => e.churchId == churchId).toList();
+
+    // 2. Query published, future events from Supabase ordered by event_date ascending, limit 5
+    final response = await _supabase
+        .from('events')
+        .select()
+        .gte('event_date', DateTime.now().toUtc().toIso8601String())
+        .eq('is_published', true)
+        .order('event_date', ascending: true)
+        .limit(5);
+
+    final list = (response as List).map((json) {
+      final map = Map<String, dynamic>.from(json as Map);
+      map['cover_url'] = map['banner_url'] ?? '';
+      return EventModel.fromJson(map);
+    }).toList();
+    
+    return list;
+  }
+
+  List<EventModel> _getLocalSeededEvents() {
+    final now = DateTime.now();
+    final events = [
+      {
+        'id': 'a9d2e81f-567d-50f9-bdb7-7726ef8da82a',
+        'title': 'Sunday Worship Service',
+        'description': 'Join us for our weekly Sunday service filled with powerful praise, worship, and an impactful word.',
+        'event_date': now.add(const Duration(days: 2)).toIso8601String(),
+        'location': 'Main Sanctuary, JUM Center',
+        'banner_url': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800',
+        'is_featured': true,
+        'is_published': true,
+        'start_time': '09:00 AM',
+        'end_time': '12:00 PM',
+      },
+      {
+        'id': '9a0eff76-2319-5da8-b471-6569495d4e76',
+        'title': 'Midweek Bible Study',
+        'description': 'Deep dive into the scriptures. Bring your questions and let us study together.',
+        'event_date': now.add(const Duration(days: 5)).toIso8601String(),
+        'location': 'Grace Hall & Online Zoom',
+        'banner_url': 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&q=80&w=800',
+        'is_featured': false,
+        'is_published': true,
+        'start_time': '06:30 PM',
+        'end_time': '08:00 PM',
+      },
+      {
+        'id': '481f3fe1-29c1-52cd-a28a-1d5cf5e458cf',
+        'title': 'Youth Night Encounter',
+        'description': 'An exciting evening for youth and young adults featuring dynamic worship and discussions.',
+        'event_date': now.add(const Duration(days: 7)).toIso8601String(),
+        'location': 'Youth Auditorium',
+        'banner_url': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800',
+        'is_featured': false,
+        'is_published': true,
+        'start_time': '07:00 PM',
+        'end_time': '09:30 PM',
+      }
+    ];
+
+    return events.map((json) {
+      final map = Map<String, dynamic>.from(json);
+      map['cover_url'] = map['banner_url'] ?? '';
+      return EventModel.fromJson(map);
+    }).toList();
+  }
+
+  Future<void> _seedDefaultEvents() async {
+    final now = DateTime.now();
+    final events = [
+      {
+        'id': 'a9d2e81f-567d-50f9-bdb7-7726ef8da82a',
+        'title': 'Sunday Worship Service',
+        'description': 'Join us for our weekly Sunday service filled with powerful praise, worship, and an impactful word.',
+        'event_date': now.add(const Duration(days: 2)).toIso8601String(),
+        'location': 'Main Sanctuary, JUM Center',
+        'banner_url': 'https://images.unsplash.com/photo-1511795409834-ef04bbd61622?auto=format&fit=crop&q=80&w=800',
+        'is_featured': true,
+        'is_published': true,
+        'start_time': '09:00 AM',
+        'end_time': '12:00 PM',
+      },
+      {
+        'id': '9a0eff76-2319-5da8-b471-6569495d4e76',
+        'title': 'Midweek Bible Study',
+        'description': 'Deep dive into the scriptures. Bring your questions and let us study together.',
+        'event_date': now.add(const Duration(days: 5)).toIso8601String(),
+        'location': 'Grace Hall & Online Zoom',
+        'banner_url': 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&q=80&w=800',
+        'is_featured': false,
+        'is_published': true,
+        'start_time': '06:30 PM',
+        'end_time': '08:00 PM',
+      },
+      {
+        'id': '481f3fe1-29c1-52cd-a28a-1d5cf5e458cf',
+        'title': 'Youth Night Encounter',
+        'description': 'An exciting evening for youth and young adults featuring dynamic worship and discussions.',
+        'event_date': now.add(const Duration(days: 7)).toIso8601String(),
+        'location': 'Youth Auditorium',
+        'banner_url': 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&q=80&w=800',
+        'is_featured': false,
+        'is_published': true,
+        'start_time': '07:00 PM',
+        'end_time': '09:30 PM',
+      },
+      {
+        'id': '157443b7-c739-5c3a-b837-652cba4a18b6',
+        'title': 'Kingdom Leadership Summit',
+        'description': 'Empowering leaders across all domains with solid biblical truths, networking, and strategy.',
+        'event_date': now.add(const Duration(days: 14)).toIso8601String(),
+        'location': 'Main Auditorium & Live broadcast',
+        'banner_url': 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
+        'is_featured': true,
+        'is_published': true,
+        'start_time': '09:00 AM',
+        'end_time': '01:00 PM',
+      },
+      {
+        'id': 'fc84ded5-abb8-53c9-a74b-55ea3169c17c',
+        'title': 'Night of Breakthrough Prayer',
+        'description': 'Stand in the gap for nations. A powerful 24-hour prayer chain connecting believers.',
+        'event_date': now.add(const Duration(days: 21)).toIso8601String(),
+        'location': 'Virtual Assembly & campuses',
+        'banner_url': 'https://images.unsplash.com/photo-1544027993-37dbfe43562a?auto=format&fit=crop&q=80&w=800',
+        'is_featured': true,
+        'is_published': true,
+        'start_time': '10:00 PM',
+        'end_time': '06:00 AM',
+      }
+    ];
+
+    await _supabase.from('events').insert(events);
   }
 
   Future<RsvpModel?> fetchRsvp(String userId, String eventId) async {
-    try {
-      final response = await _supabase
-          .from('rsvps')
-          .select()
-          .eq('user_id', userId)
-          .eq('event_id', eventId)
-          .maybeSingle();
+    final response = await _supabase
+        .from('event_registrations')
+        .select()
+        .eq('user_id', userId)
+        .eq('event_id', eventId)
+        .maybeSingle();
 
-      if (response != null) {
-        return RsvpModel.fromJson(response);
-      }
-    } catch (e) {
-      // Graceful fallback to memory RSVP cache
+    if (response != null) {
+      return RsvpModel.fromJson(response);
     }
-    return _inMemoryRsvps['$userId-$eventId'];
+    return null;
   }
 
   Future<RsvpModel> createRsvp(String userId, String eventId) async {
@@ -108,13 +184,22 @@ class EventsRepository {
       createdAt: DateTime.now(),
     );
 
-    try {
-      await _supabase.from('rsvps').insert(rsvp.toJson());
-    } catch (e) {
-      // Graceful fallback to in-memory cache
-    }
+    await _supabase.from('event_registrations').insert(rsvp.toJson());
 
-    _inMemoryRsvps['$userId-$eventId'] = rsvp;
     return rsvp;
+  }
+
+  Future<EventModel?> fetchEvent(String eventId) async {
+    final response = await _supabase
+        .from('events')
+        .select()
+        .eq('id', eventId)
+        .maybeSingle();
+    if (response != null) {
+      final map = Map<String, dynamic>.from(response as Map);
+      map['cover_url'] = map['banner_url'] ?? '';
+      return EventModel.fromJson(map);
+    }
+    return null;
   }
 }

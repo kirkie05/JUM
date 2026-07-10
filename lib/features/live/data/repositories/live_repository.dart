@@ -10,11 +10,10 @@ class LiveRepository {
   final SupabaseClient _supabase;
   LiveRepository(this._supabase);
 
-  Stream<List<LiveStreamModel>> watchActive(String churchId) {
+  Stream<List<LiveStreamModel>> watchActive() {
     return _supabase
         .from('live_streams')
         .stream(primaryKey: ['id'])
-        .eq('church_id', churchId)
         .map((rows) => rows.map((row) => LiveStreamModel.fromJson(row)).toList());
   }
 

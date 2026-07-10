@@ -1,6 +1,5 @@
 class ProductModel {
   final String id;
-  final String churchId;
   final String title;
   final String description;
   final String type; // 'digital' | 'physical'
@@ -14,7 +13,6 @@ class ProductModel {
 
   ProductModel({
     required this.id,
-    required this.churchId,
     required this.title,
     required this.description,
     required this.type,
@@ -28,7 +26,6 @@ class ProductModel {
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
       id: json['id'] as String? ?? '',
-      churchId: json['church_id'] as String? ?? json['churchId'] as String? ?? '',
       title: json['title'] as String? ?? '',
       description: json['description'] as String? ?? '',
       type: json['type'] as String? ?? 'physical',
@@ -43,7 +40,6 @@ class ProductModel {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'church_id': churchId,
       'title': title,
       'description': description,
       'type': type,

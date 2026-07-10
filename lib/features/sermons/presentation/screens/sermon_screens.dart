@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jum/features/media/presentation/screens/media_library_screen.dart';
 
-import '../../../media/presentation/screens/media_library_screen.dart';
 import 'sermon_player_screen.dart';
 
 class SermonListScreen extends StatelessWidget {

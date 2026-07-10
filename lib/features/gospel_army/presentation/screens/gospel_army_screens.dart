@@ -13,6 +13,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_app_bar.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../widgets/progress_ring.dart';
 import '../../data/models/course_model.dart';
@@ -200,7 +201,7 @@ class _GospelArmyListScreenState extends ConsumerState<GospelArmyListScreen> {
         showBack: true,
       ),
       body: coursesAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => JumShimmer.list(),
         error: (err, st) => Center(child: Text('Failed to load courses: $err', style: const TextStyle(color: Colors.red))),
         data: (courses) {
           // Identify enrolled courses
@@ -451,7 +452,7 @@ class GospelArmyDetailScreen extends ConsumerWidget {
       backgroundColor: AppColors.background,
       appBar: JumAppBar(title: 'Course Outline', showBack: true),
       body: courseAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => Padding(padding: const EdgeInsets.all(AppSizes.paddingLg), child: JumShimmer.card(height: 300)),
         error: (err, st) => Center(child: Text('Error: $err')),
         data: (course) {
           final isEnrolled = enrollmentAsync.value != null;
@@ -498,7 +499,7 @@ class GospelArmyDetailScreen extends ConsumerWidget {
                             ),
                             const Gap(12),
                             lessonsAsync.when(
-                              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+                              loading: () => JumShimmer.list(),
                               error: (e, __) => Text('Failed to load lessons: $e'),
                               data: (lessons) {
                                 if (lessons.isEmpty) {
@@ -677,7 +678,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> with Si
       backgroundColor: AppColors.background,
       appBar: JumAppBar(title: 'Lesson Study', showBack: true),
       body: lessonsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => JumShimmer.list(),
         error: (err, st) => Center(child: Text('Error: $err')),
         data: (lessons) {
           final lessonIndex = lessons.indexWhere((l) => l.id == widget.lessonId);
@@ -812,7 +813,7 @@ class _LessonPlayerScreenState extends ConsumerState<LessonPlayerScreen> with Si
 
                     // C) Practice Quiz View
                     _loadingQuiz
-                        ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                        ? JumShimmer.list()
                         : _questions.isEmpty
                             ? const Center(child: Text('No quiz for this lesson.', style: TextStyle(color: AppColors.textSecondary)))
                             : SingleChildScrollView(

@@ -6,7 +6,7 @@ part of 'community_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$communityFeedHash() => r'd8402d9bed68922b82ee4815bfc018971ade9882';
+String _$communityFeedHash() => r'd35f9703da5921fd4531af53f5095debcb7241a1';
 
 /// See also [communityFeed].
 @ProviderFor(communityFeed)
@@ -167,7 +167,7 @@ class _PostCommentsProviderElement
 }
 
 String _$createPostNotifierHash() =>
-    r'e4029e04efc1a98fde9282fa668bc38ad4a7a964';
+    r'71ea91a295a5074a43b78ae6b94f8a44743759b3';
 
 /// See also [CreatePostNotifier].
 @ProviderFor(CreatePostNotifier)

@@ -6,7 +6,7 @@ part of 'live_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$liveStreamsStreamHash() => r'503bbaf4685b2668d5ee9796335b1b204434e1a1';
+String _$liveStreamsStreamHash() => r'48768f112574d11f36eb6b2fd5f66b74864f78f6';
 
 /// See also [liveStreamsStream].
 @ProviderFor(liveStreamsStream)

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:gap/gap.dart';
 import '../../../../shared/widgets/jum_card.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/sermon_model.dart';
 
 class SermonCard extends StatelessWidget {
@@ -41,26 +42,31 @@ class SermonCard extends StatelessWidget {
             ),
             child: Stack(
               children: [
-                CachedNetworkImage(
-                  imageUrl: sermon.thumbnailUrl,
-                  height: 110,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    height: 110,
-                    color: const Color(0xFF1F1F1F),
-                    child: const Center(
-                      child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                    ),
-                  ),
-                  errorWidget: (context, url, error) => Container(
-                    height: 110,
-                    color: const Color(0xFF1F1F1F),
-                    child: const Center(
-                      child: Icon(Icons.movie_creation_outlined, color: Color(0xFF8E8E8E)),
-                    ),
-                  ),
-                ),
+                sermon.thumbnailUrl.startsWith('assets/')
+                    ? Image.asset(
+                        sermon.thumbnailUrl,
+                        height: 110,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      )
+                    : CachedNetworkImage(
+                        imageUrl: sermon.thumbnailUrl,
+                        height: 110,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Container(
+                          height: 110,
+                          color: const Color(0xFF1F1F1F),
+                          child: JumShimmer.card(height: 110),
+                        ),
+                        errorWidget: (context, url, error) => Container(
+                          height: 110,
+                          color: const Color(0xFF1F1F1F),
+                          child: const Center(
+                            child: Icon(Icons.movie_creation_outlined, color: Color(0xFF8E8E8E)),
+                          ),
+                        ),
+                      ),
                 // Center icon overlay
                 Positioned.fill(
                   child: Container(

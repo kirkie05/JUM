@@ -4,6 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import '../../data/models/bible_models.dart';
 import '../../data/providers/bible_providers.dart';
+import '../../data/providers/reading_plan_providers.dart';
+import '../../../../core/constants/app_colors.dart';
+import '../../data/models/reading_plan_models.dart';
 
 class BibleContentRenderer extends ConsumerWidget {
   final BibleChapter chapter;
@@ -25,6 +28,11 @@ class BibleContentRenderer extends ConsumerWidget {
     final currentBook = ref.watch(currentBookProvider);
     final currentChapter = ref.watch(currentChapterNumberProvider);
     final highlights = ref.watch(bibleHighlightsProvider);
+
+    final notesAsync = ref.watch(bibleNotesProvider('${currentBook}_$currentChapter'));
+    final bookmarksAsync = ref.watch(bibleBookmarksProvider('${currentBook}_$currentChapter'));
+    final notes = notesAsync.value ?? [];
+    final bookmarks = bookmarksAsync.value ?? [];
 
     // Theme config map
     final bool isDark = readingTheme == ReadingTheme.dark;
@@ -49,6 +57,8 @@ class BibleContentRenderer extends ConsumerWidget {
                 node, 
                 ref, 
                 selectedVerse,
+                notes: notes,
+                bookmarks: bookmarks,
                 fontSize: fontSize,
                 fontFamily: fontFamily,
                 textColor: textColor,
@@ -98,6 +108,8 @@ class BibleContentRenderer extends ConsumerWidget {
     ChapterNode node,
     WidgetRef ref,
     int? currentlySelected, {
+    required List<LocalNote> notes,
+    required List<LocalBookmark> bookmarks,
     required double fontSize,
     required String fontFamily,
     required Color textColor,
@@ -106,6 +118,10 @@ class BibleContentRenderer extends ConsumerWidget {
     final vNum = node.verseNumber ?? 0;
     final isSelected = vNum == currentlySelected;
     final plainText = _flattenNodeContent(node.content);
+
+    final hasNote = notes.any((n) => n.verse == vNum);
+    final hasBookmark = bookmarks.any((b) => b.verse == vNum && b.type == 'bookmark');
+    final hasFavorite = bookmarks.any((b) => b.verse == vNum && b.type == 'favorite');
 
     // Combine system selection highlight with user applied persistent highlight
     Color? displayBackgroundColor;
@@ -138,13 +154,33 @@ class BibleContentRenderer extends ConsumerWidget {
                 alignment: PlaceholderAlignment.top,
                 child: Transform.translate(
                   offset: const Offset(0, -4),
-                  child: Text(
-                    '$vNum ',
-                    style: TextStyle(
-                      fontSize: fontSize * 0.6, // scale relative to font selection
-                      color: Colors.grey.shade500,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '$vNum ',
+                        style: TextStyle(
+                          fontSize: fontSize * 0.6, // scale relative to font selection
+                          color: Colors.grey.shade500,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (hasBookmark)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 2.0),
+                          child: Icon(Icons.bookmark, size: 10, color: AppColors.primary),
+                        ),
+                      if (hasFavorite)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 2.0),
+                          child: Icon(Icons.favorite, size: 10, color: Colors.red),
+                        ),
+                      if (hasNote)
+                        const Padding(
+                          padding: EdgeInsets.only(right: 2.0),
+                          child: Icon(Icons.notes, size: 10, color: Colors.blue),
+                        ),
+                    ],
                   ),
                 ),
               ),

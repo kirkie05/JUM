@@ -4,24 +4,27 @@ import 'package:gap/gap.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_text_field.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
+import '../../data/providers/giving_provider.dart';
 
 // -------------------------------------------------------------
 // GIVE SCREEN
 // -------------------------------------------------------------
-class GiveScreen extends StatefulWidget {
+class GiveScreen extends ConsumerStatefulWidget {
   const GiveScreen({Key? key}) : super(key: key);
 
   @override
-  State<GiveScreen> createState() => _GiveScreenState();
+  ConsumerState<GiveScreen> createState() => _GiveScreenState();
 }
 
-class _GiveScreenState extends State<GiveScreen> {
+class _GiveScreenState extends ConsumerState<GiveScreen> {
   String _selectedAmount = '50';
   String _selectedCategory = 'Tithe';
   final _customAmountController = TextEditingController();
@@ -36,134 +39,21 @@ class _GiveScreenState extends State<GiveScreen> {
     'Building Fund',
   ];
 
-  void _showMockPaymentSheet() {
+  void _processPayment() async {
     final amountText = _selectedAmount == 'Custom'
         ? _customAmountController.text
         : _selectedAmount;
-    if (amountText.isEmpty) return;
+    final amount = double.tryParse(amountText) ?? 0.0;
+    if (amount <= 0) return;
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppSizes.radiusLg),
-        ),
-      ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-            top: AppSizes.paddingLg,
-            left: AppSizes.paddingLg,
-            right: AppSizes.paddingLg,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Secure Checkout',
-                    style: AppTextStyles.h2.copyWith(
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: AppColors.textMuted),
-                  ),
-                ],
-              ),
-              const Gap(8),
-              Row(
-                children: [
-                  const Icon(
-                    Icons.lock_outline_rounded,
-                    size: 14,
-                    color: AppColors.success,
-                  ),
-                  const Gap(6),
-                  Text(
-                    'SSL Encrypted Transaction',
-                    style: AppTextStyles.caption.copyWith(
-                      color: AppColors.success,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(24),
-              Text(
-                'Giving Amount',
-                style: AppTextStyles.caption.copyWith(
-                  color: AppColors.textSecondary,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              const Gap(4),
-              Text(
-                '\$$amountText.00',
-                style: AppTextStyles.h1.copyWith(
-                  color: AppColors.accent,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const Gap(24),
-              const JumTextField(
-                label: 'Cardholder Name',
-                hint: 'John Doe',
-                prefix: Icon(Icons.person_outline, color: AppColors.textMuted),
-              ),
-              const Gap(16),
-              const JumTextField(
-                label: 'Card Number',
-                hint: '4111 2222 3333 4444',
-                prefix: Icon(
-                  Icons.credit_card_outlined,
-                  color: AppColors.textMuted,
-                ),
-                keyboardType: TextInputType.number,
-              ),
-              const Gap(16),
-              const Row(
-                children: [
-                  Expanded(
-                    child: JumTextField(
-                      label: 'Expiry Date',
-                      hint: 'MM/YY',
-                      keyboardType: TextInputType.datetime,
-                    ),
-                  ),
-                  Gap(16),
-                  Expanded(
-                    child: JumTextField(
-                      label: 'CVV',
-                      hint: '123',
-                      obscureText: true,
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                ],
-              ),
-              const Gap(32),
-              JumButton(
-                label: 'Confirm Contribution',
-                isFullWidth: true,
-                onPressed: () {
-                  Navigator.pop(context);
-                  _showSuccessDialog(amountText);
-                },
-              ),
-              const Gap(24),
-            ],
-          ),
-        );
-      },
-    );
+    ref.read(givingNotifierProvider.notifier).setAmount(amount);
+    ref.read(givingNotifierProvider.notifier).setCategory(_selectedCategory);
+    ref.read(givingNotifierProvider.notifier).setRecurring(_isRecurring);
+
+    final success = await ref.read(givingNotifierProvider.notifier).submitGiving(context);
+    if (success && mounted) {
+      // The submitGiving method already handles navigation to receipt
+    }
   }
 
   void _showSuccessDialog(String amount) {
@@ -378,9 +268,9 @@ class _GiveScreenState extends State<GiveScreen> {
             ),
             const Gap(40),
             JumButton(
-              label: 'Proceed to Secure Contribution',
+              label: ref.watch(givingNotifierProvider).isLoading ? 'Processing...' : 'Proceed to Secure Contribution',
               isFullWidth: true,
-              onPressed: _showMockPaymentSheet,
+              onPressed: ref.watch(givingNotifierProvider).isLoading ? null : _processPayment,
             ),
             const Gap(12),
             JumButton(
@@ -399,37 +289,12 @@ class _GiveScreenState extends State<GiveScreen> {
 // -------------------------------------------------------------
 // GIVING HISTORY SCREEN
 // -------------------------------------------------------------
-class GivingHistoryScreen extends StatelessWidget {
+class GivingHistoryScreen extends ConsumerWidget {
   const GivingHistoryScreen({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    final history = [
-      {
-        'date': 'May 1, 2026',
-        'category': 'Tithe',
-        'amount': '150.00',
-        'method': 'Visa •••• 4242',
-      },
-      {
-        'date': 'April 15, 2026',
-        'category': 'Offering',
-        'amount': '50.00',
-        'method': 'MasterCard •••• 5555',
-      },
-      {
-        'date': 'April 1, 2026',
-        'category': 'Tithe',
-        'amount': '150.00',
-        'method': 'Visa •••• 4242',
-      },
-      {
-        'date': 'March 15, 2026',
-        'category': 'Missions',
-        'amount': '100.00',
-        'method': 'Apple Pay',
-      },
-    ];
+  Widget build(BuildContext context, WidgetRef ref) {
+    final historyAsync = ref.watch(givingHistoryProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -483,79 +348,101 @@ class GivingHistoryScreen extends StatelessWidget {
             ),
             const Gap(12),
             Expanded(
-              child: ListView.builder(
-                itemCount: history.length,
-                itemBuilder: (context, index) {
-                  final item = history[index];
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: AppSizes.paddingSm),
-                    child: JumCard(
-                      child: Padding(
-                        padding: const EdgeInsets.all(AppSizes.paddingMd),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
+              child: historyAsync.when(
+                data: (history) {
+                  if (history.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No contributions yet',
+                        style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                      ),
+                    );
+                  }
+                  return ListView.builder(
+                    itemCount: history.length,
+                    itemBuilder: (context, index) {
+                      final item = history[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSizes.paddingSm),
+                        child: JumCard(
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSizes.paddingMd),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const CircleAvatar(
-                                  backgroundColor: AppColors.primary,
-                                  child: Icon(
-                                    Icons.volunteer_activism,
-                                    color: AppColors.accent,
-                                  ),
+                                Row(
+                                  children: [
+                                    const CircleAvatar(
+                                      backgroundColor: AppColors.primary,
+                                      child: Icon(
+                                        Icons.volunteer_activism,
+                                        color: AppColors.accent,
+                                      ),
+                                    ),
+                                    const Gap(16),
+                                    Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.category,
+                                          style: AppTextStyles.bodyMedium.copyWith(
+                                            color: AppColors.textPrimary,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                        Text(
+                                          '${item.createdAt.toLocal().toString().split(' ')[0]} • ${item.gateway}',
+                                          style: AppTextStyles.caption.copyWith(
+                                            color: AppColors.textSecondary,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
-                                const Gap(16),
                                 Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
                                   children: [
                                     Text(
-                                      item['category']!,
+                                      '\$${item.amount.toStringAsFixed(2)}',
                                       style: AppTextStyles.bodyMedium.copyWith(
-                                        color: AppColors.textPrimary,
+                                        color: AppColors.accent,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    Text(
-                                      '${item['date']} • ${item['method']}',
-                                      style: AppTextStyles.caption.copyWith(
-                                        color: AppColors.textSecondary,
+                                    TextButton(
+                                      onPressed: () {
+                                        if (item.receiptUrl != null && item.receiptUrl!.isNotEmpty) {
+                                          context.push(
+                                            '/giving/receipt/${item.id}',
+                                            extra: item,
+                                          );
+                                        }
+                                      },
+                                      child: Text(
+                                        'Receipt',
+                                        style: AppTextStyles.caption.copyWith(
+                                          color: AppColors.info,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ],
                             ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Text(
-                                  '\$${item['amount']}',
-                                  style: AppTextStyles.bodyMedium.copyWith(
-                                    color: AppColors.accent,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                TextButton(
-                                  onPressed: () {
-                                    context.push(
-                                      '/home/give/confirmation?amount=${item['amount']}&category=${item['category']}&method=${Uri.encodeComponent(item['method']!)}',
-                                    );
-                                  },
-                                  child: Text(
-                                    'Receipt',
-                                    style: AppTextStyles.caption.copyWith(
-                                      color: AppColors.info,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   );
                 },
+                loading: () => JumShimmerList(),
+                error: (err, stack) => Center(
+                  child: Text(
+                    'Error loading history: $err',
+                    style: AppTextStyles.bodyMedium.copyWith(color: AppColors.error),
+                  ),
+                ),
               ),
             ),
           ],

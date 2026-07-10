@@ -11,6 +11,7 @@ import '../../../../shared/widgets/jum_avatar.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
 import '../../../../core/providers/current_user_provider.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 
 class PostCard extends ConsumerWidget {
   final PostModel post;
@@ -146,7 +147,7 @@ class PostCard extends ConsumerWidget {
                 placeholder: (context, url) => Container(
                   height: 220,
                   color: AppColors.surface2,
-                  child: const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                  child: JumShimmer.card(height: 220),
                 ),
                 errorWidget: (context, url, error) => Container(
                   height: 220,

@@ -8,6 +8,7 @@ import '../../../../core/constants/app_text_styles.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
 import '../../../../shared/widgets/jum_empty_state.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/product_model.dart';
 import '../../data/models/order_model.dart';
 import '../../data/providers/marketplace_providers.dart';
@@ -221,7 +222,7 @@ class _ProductListScreenState extends ConsumerState<ProductListScreen> {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+              loading: () => JumShimmer.list(),
               error: (e, st) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
             ),
           ),
@@ -335,7 +336,7 @@ class ProductDetailScreen extends ConsumerWidget {
             ),
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => Padding(padding: const EdgeInsets.all(AppSizes.paddingLg), child: JumShimmer.card(height: 300)),
         error: (e, st) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
       ),
     );
@@ -605,7 +606,7 @@ class MyOrdersScreen extends ConsumerWidget {
             },
           );
         },
-        loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+        loading: () => JumShimmer.list(),
         error: (e, st) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
       ),
     );

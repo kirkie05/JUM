@@ -175,7 +175,7 @@ class _SermonLibraryScreenState extends ConsumerState<SermonLibraryScreen> {
 
   Widget _buildSearchResults(SermonSearchState searchState, int crossAxisCount) {
     if (searchState.isLoading) {
-      return const Center(child: CircularProgressIndicator(color: Colors.white));
+      return const JumShimmerGrid();
     }
 
     final filtered = searchState.results.where((s) {

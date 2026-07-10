@@ -54,7 +54,7 @@ class GivingNotifier extends StateNotifier<GivingState> {
         success = await ref.read(paymentServiceProvider).chargeWithStripe(
               amount: state.amount,
               currency: 'usd',
-              churchId: user.churchId,
+              churchId: 'jum-main',
             );
       }
       
@@ -62,7 +62,6 @@ class GivingNotifier extends StateNotifier<GivingState> {
         final tx = GivingTransaction(
           id: const Uuid().v4(),
           userId: user.id,
-          churchId: user.churchId,
           amount: state.amount,
           currency: usePaystack ? 'NGN' : 'USD',
           category: state.selectedCategory,

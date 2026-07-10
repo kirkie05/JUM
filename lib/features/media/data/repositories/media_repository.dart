@@ -1,253 +1,140 @@
+import 'dart:async';
 import 'package:dio/dio.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../core/services/youtube_service.dart';
 import '../models/media_item.dart';
 
 class MediaRepository {
   MediaRepository(this._dio);
 
   final Dio _dio;
-
-  static const _youtubeUrlKey = 'media_youtube_channel_url';
-  static const _mixlrUrlKey = 'media_mixlr_channel_url';
+  final YoutubeService _youtubeService = YoutubeService();
+  final SupabaseClient _supabase = Supabase.instance.client;
 
   Future<MediaChannelConfig> loadChannelConfig() async {
-    final prefs = await SharedPreferences.getInstance();
-    return MediaChannelConfig(
-      youtubeUrl:
-          prefs.getString(_youtubeUrlKey) ??
-          MediaChannelConfig.defaults.youtubeUrl,
-      mixlrUrl:
-          prefs.getString(_mixlrUrlKey) ?? MediaChannelConfig.defaults.mixlrUrl,
-    );
+    return MediaChannelConfig.fromEnvOrPrefs();
   }
 
-  Future<void> saveChannelConfig(MediaChannelConfig config) async {
-    final prefs = await SharedPreferences.getInstance();
-    await Future.wait([
-      prefs.setString(_youtubeUrlKey, config.youtubeUrl.trim()),
-      prefs.setString(_mixlrUrlKey, config.mixlrUrl.trim()),
-    ]);
-  }
-
-  Future<List<MediaItem>> fetchMedia() async {
-    final config = await loadChannelConfig();
-    final results = await Future.wait([
-      fetchYoutubeVideos(config.youtubeUrl),
-      fetchMixlrAudio(config.mixlrUrl),
-    ]);
-    return [...results[0], ...results[1]]..sort((a, b) {
-      if (a.isLive != b.isLive) return a.isLive ? -1 : 1;
-      final aDate = a.publishedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      final bDate = b.publishedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-      return bDate.compareTo(aDate);
-    });
-  }
-
-  Future<List<MediaItem>> fetchYoutubeVideos(String channelUrl) async {
-    final channelId = await _resolveYoutubeChannelId(channelUrl);
-    final feedUrl =
-        'https://www.youtube.com/feeds/videos.xml?channel_id=$channelId';
-    final response = await _dio.get<String>(feedUrl);
-    final xml = response.data ?? '';
-    final author =
-        _decode(_firstTag(xml, 'title')) ?? 'Jesus Unhindered Ministry';
-    final entries = RegExp(
-      r'<entry>([\s\S]*?)<\/entry>',
-      multiLine: true,
-    ).allMatches(xml);
-
-    return entries
-        .map((match) {
-          final entry = match.group(1) ?? '';
-          final videoId = _firstTag(entry, 'yt:videoId') ?? '';
-          final title = _decode(_firstTag(entry, 'title')) ?? 'YouTube video';
-          final publishedAt = DateTime.tryParse(
-            _firstTag(entry, 'published') ?? '',
-          );
-          final thumbnail = _firstAttribute(entry, 'media:thumbnail', 'url');
-          final description = _decode(_firstTag(entry, 'media:description'));
-          final views = int.tryParse(
-            _firstAttribute(entry, 'media:statistics', 'views') ?? '',
-          );
-
-          return MediaItem(
-            id: 'youtube-$videoId',
-            type: MediaItemType.video,
-            title: title,
-            sourceName: author,
-            sourceUrl: 'https://www.youtube.com/watch?v=$videoId',
-            thumbnailUrl: thumbnail,
-            description: description,
-            publishedAt: publishedAt,
-            viewCount: views,
-          );
-        })
-        .where((item) => item.id != 'youtube-')
-        .toList();
-  }
-
-  Future<List<MediaItem>> fetchMixlrAudio(String channelUrl) async {
-    final slug = _mixlrSlug(channelUrl);
+  Future<List<MediaItem>> fetchMedia({bool forceRefresh = false}) async {
+    // 1. Try to sync latest from YouTube
     try {
-      final viewResponse = await _dio.get<Map<String, dynamic>>(
-        'https://apicdn.mixlr.com/v3/channel_view/$slug',
-      );
-      final viewData = viewResponse.data ?? const {};
-      final isLive = viewData['live'] == true;
-      final channelId = viewData['channel_id'];
-      final title = (viewData['channel_name'] ?? 'Jesus Unhindered Ministry')
-          .toString();
-      final logoUrl = viewData['profile_image_url']?.toString();
-      final about = viewData['about_me']?.toString();
-
-      final items = <MediaItem>[];
-
-      if (isLive && channelId != null) {
-        items.add(
-          MediaItem(
-            id: 'mixlr-$slug-live',
-            type: MediaItemType.audio,
-            title: '$title is live now',
-            sourceName: 'Mixlr',
-            sourceUrl: 'https://edge.mixlr.com/channel/$channelId',
-            thumbnailUrl: logoUrl,
-            description: about,
-            isLive: true,
-          ),
-        );
+      final ytVideos = await _youtubeService.fetchLatestVideos(count: 20);
+      
+      // Sync to Supabase
+      for (final video in ytVideos) {
+        await _supabase.from('youtube_videos').upsert({
+          'id': 'youtube-${video.id}',
+          'title': video.title,
+          'description': video.description,
+          'thumbnail_url': video.thumbnailUrl,
+          'duration': video.duration?.inSeconds.toString(),
+          'published_at': video.publishedAt?.toIso8601String(),
+          'source_name': video.author,
+          'source_url': 'https://www.youtube.com/watch?v=${video.id}',
+          'is_live': video.isLive,
+        });
       }
-
-      final recordings = await _fetchMixlrRecordings(slug);
-      items.addAll(recordings);
-
-      // If no items at all, at least show the offline channel
-      if (items.isEmpty) {
-        items.add(
-          MediaItem(
-            id: 'mixlr-$slug-offline',
-            type: MediaItemType.audio,
-            title: '$title channel',
-            sourceName: 'Mixlr',
-            sourceUrl: 'https://edge.mixlr.com/channel/$channelId',
-            thumbnailUrl: logoUrl,
-            description: about,
-            isLive: false,
-          ),
-        );
-      }
-
-      return items;
-    } catch (_) {
-      return const [];
+    } catch (e) {
+      print('Failed to sync YouTube videos, using cache: $e');
     }
-  }
 
-  Future<List<MediaItem>> _fetchMixlrRecordings(String slug) async {
+    // 2. Fetch from Supabase (which acts as the single source of truth/cache)
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        'https://apicdn.mixlr.com/v3/channels/$slug/recordings?page[size]=20',
-      );
-      final dataList = response.data?['data'] as List? ?? const [];
-      final included = response.data?['included'] as List? ?? const [];
+      final response = await _supabase
+          .from('youtube_videos')
+          .select()
+          .order('published_at', ascending: false)
+          .limit(50);
 
-      return dataList.map((rawItem) {
-        final item = rawItem as Map;
-        final attrs = (item['attributes'] as Map?) ?? const {};
-        final rels = (item['relationships'] as Map?) ?? const {};
-
-        final audioRef = (rels['audio']?['data'] as Map?) ?? const {};
-        final audioId = audioRef['id'];
-
-        String? audioUrl;
-        if (audioId != null) {
-          // Use dynamic cast explicitly to permit orElse resulting in null
-          final audioEntity = included.cast<dynamic>().firstWhere(
-            (inc) =>
-                inc is Map && inc['id'] == audioId && inc['type'] == 'audio',
-            orElse: () => null,
-          );
-          audioUrl =
-              (audioEntity as Map?)?['attributes']?['url']?.toString() ??
-              attrs['url']?.toString();
-        }
-
-        audioUrl ??= attrs['url']?.toString();
-
-        final thumbMap = attrs['media']?['artwork']?['image'] as Map?;
-        final thumb = thumbMap?['medium'] ?? thumbMap?['small'];
-
+      return (response as List).map((data) {
         return MediaItem(
-          id: 'mixlr-rec-${item['id']}',
-          type: MediaItemType.audio,
-          title: (attrs['title'] ?? 'Mixlr broadcast').toString(),
-          sourceName: 'Mixlr',
-          sourceUrl: audioUrl ?? '',
-          thumbnailUrl: thumb?.toString(),
-          description: attrs['description']?.toString(),
-          publishedAt: DateTime.tryParse(
-            (attrs['starts_at'] ?? attrs['created_at'] ?? '').toString(),
-          ),
+          id: data['id'],
+          type: MediaItemType.video,
+          title: data['title'] ?? '',
+          sourceName: data['source_name'] ?? 'YouTube',
+          sourceUrl: data['source_url'] ?? '',
+          thumbnailUrl: data['thumbnail_url'],
+          description: data['description'],
+          publishedAt: data['published_at'] != null ? DateTime.tryParse(data['published_at']) : null,
+          isLive: data['is_live'] ?? false,
         );
-      }).where((item) => item.sourceUrl.isNotEmpty).toList();
+      }).toList();
+    } catch (e) {
+      print('Failed to fetch from Supabase cache: $e');
+      return [];
+    }
+  }
+
+  Future<List<MediaItem>> fetchYoutubeVideos(String channelId) async {
+    return fetchMedia();
+  }
+
+  Future<List<MediaItem>> fetchYoutubePlaylists(String channelId) async {
+    return [];
+  }
+
+  Future<MediaItem?> checkYoutubeLive(String channelId) async {
+    final media = await fetchMedia();
+    try {
+      return media.firstWhere((m) => m.isLive);
     } catch (_) {
-      return const [];
+      return null;
     }
   }
 
-  Future<String> _resolveYoutubeChannelId(String channelUrl) async {
-    final direct = RegExp(r'(UC[\w-]{20,})').firstMatch(channelUrl);
-    if (direct != null) return direct.group(1)!;
+  Future<List<MediaItem>> fetchMixlrAudio(String username) async {
+    try {
+      // Mixlr API requires users endpoint
+      final res = await _dio.get('https://api.mixlr.com/users/$username/broadcasts');
+      
+      final data = res.data;
+      final broadcasts = data['broadcasts'] as List? ?? [];
 
-    final normalized = channelUrl.startsWith('http')
-        ? channelUrl
-        : 'https://www.youtube.com/${channelUrl.replaceFirst(RegExp(r'^/+'), '')}';
-    final response = await _dio.get<String>(normalized);
-    final page = response.data ?? '';
-    final feed = RegExp(
-      r'https:\/\/www\.youtube\.com\/feeds\/videos\.xml\?channel_id=(UC[\w-]+)',
-    ).firstMatch(page);
-    if (feed != null) return feed.group(1)!;
-
-    final channelId = RegExp(r'"channelId":"(UC[\w-]+)"').firstMatch(page);
-    if (channelId != null) return channelId.group(1)!;
-
-    throw StateError('Unable to resolve YouTube channel from $channelUrl');
-  }
-
-  String _mixlrSlug(String channelUrl) {
-    final uri = Uri.tryParse(channelUrl.trim());
-    if (uri == null) return channelUrl.trim();
-    if (uri.host.endsWith('.mixlr.com')) {
-      return uri.host.split('.').first;
+      return broadcasts.map((b) {
+        return MediaItem(
+          id: 'mixlr-${b['id']}',
+          type: MediaItemType.audio,
+          title: b['title'] ?? 'Audio Broadcast',
+          sourceName: username,
+          sourceUrl: b['streams']?['progressive']?['url'] ?? '',
+          thumbnailUrl: b['artwork_url'],
+          publishedAt: b['starts_at'] != null ? DateTime.tryParse(b['starts_at']) : null,
+          isLive: false,
+        );
+      }).toList();
+    } catch (e) {
+      return [];
     }
-    final segments = uri.pathSegments.where((s) => s.isNotEmpty).toList();
-    return segments.isEmpty ? channelUrl.trim() : segments.first;
   }
 
-  String? _firstTag(String source, String tag) {
-    final match = RegExp(
-      '<$tag>([\\s\\S]*?)<\\/$tag>',
-      multiLine: true,
-    ).firstMatch(source);
-    return match?.group(1);
+  Future<MediaItem?> fetchMixlrSchedule(String username) async {
+    try {
+      final res = await _dio.get('https://api.mixlr.com/users/$username/events');
+      final events = res.data['events'] as List?;
+      if (events == null || events.isEmpty) return null;
+      
+      final nextEvent = events.first;
+      return MediaItem(
+        id: 'mixlr-event-${nextEvent['id']}',
+        type: MediaItemType.audio,
+        title: nextEvent['title'] ?? 'Scheduled Broadcast',
+        sourceName: username,
+        sourceUrl: '',
+        thumbnailUrl: nextEvent['artwork_url'],
+        publishedAt: nextEvent['starts_at'] != null ? DateTime.tryParse(nextEvent['starts_at']) : null,
+        isLive: false,
+      );
+    } catch (e) {
+      return null;
+    }
   }
 
-  String? _firstAttribute(String source, String tag, String attribute) {
-    final match = RegExp(
-      '<$tag\\b[^>]*\\b$attribute="([^"]*)"',
-      multiLine: true,
-    ).firstMatch(source);
-    return _decode(match?.group(1));
+  Future<void> clearCache() async {
+    // API cache strategy managed differently, mostly rely on Dio/HTTP cache or simple refetch
   }
 
-  String? _decode(String? value) {
-    return value
-        ?.replaceAll('&amp;', '&')
-        .replaceAll('&quot;', '"')
-        .replaceAll('&#39;', "'")
-        .replaceAll('&lt;', '<')
-        .replaceAll('&gt;', '>')
-        .trim();
+  void dispose() {
+    _dio.close();
   }
 }

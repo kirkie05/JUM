@@ -8,6 +8,8 @@ import '../../data/providers/messaging_providers.dart';
 import '../../data/repositories/messaging_repository.dart';
 import '../widgets/chat_input_bar.dart';
 import '../widgets/message_bubble.dart';
+import '../../../../shared/widgets/jum_empty_state.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 
 class ConversationScreen extends ConsumerWidget {
   final String peerId;
@@ -24,7 +26,7 @@ class ConversationScreen extends ConsumerWidget {
     final contactsAsync = ref.watch(contactsProvider);
 
     final peerUser = contactsAsync.maybeWhen(
-      data: (list) => list.firstWhere((u) => u.id == peerId, orElse: () => list.first),
+      data: (list) => list.isEmpty ? null : list.firstWhere((u) => u.id == peerId, orElse: () => list.first),
       orElse: () => null,
     );
 
@@ -98,7 +100,7 @@ class ConversationScreen extends ConsumerWidget {
                   },
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator(color: AppColors.accent)),
+              loading: () => JumShimmer.list(),
               error: (e, st) => Center(child: Text('Error: $e', style: const TextStyle(color: AppColors.error))),
             ),
           ),

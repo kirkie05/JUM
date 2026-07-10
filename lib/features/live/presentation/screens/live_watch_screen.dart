@@ -64,7 +64,6 @@ class _LiveWatchScreenState extends ConsumerState<LiveWatchScreen> {
   LiveStreamModel _fallbackStream() {
     return LiveStreamModel(
       id: widget.streamId,
-      churchId: 'jum-church-1',
       muxStreamId: 'mux-stream-1',
       muxPlaybackId: 'v69ElvZnALSpU7vS68v8500602',
       title: 'Sunday Victory Service',

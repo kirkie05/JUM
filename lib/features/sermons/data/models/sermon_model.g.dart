@@ -8,27 +8,27 @@ part of 'sermon_model.dart';
 
 _SermonModel _$SermonModelFromJson(Map<String, dynamic> json) => _SermonModel(
   id: json['id'] as String,
-  churchId: json['churchId'] as String,
   title: json['title'] as String,
   description: json['description'] as String,
   speaker: json['speaker'] as String,
-  mediaUrl: json['mediaUrl'] as String,
-  thumbnailUrl: json['thumbnailUrl'] as String,
+  mediaUrl: json['media_url'] as String,
+  thumbnailUrl: json['thumbnail_url'] as String,
   type: json['type'] as String,
-  durationSeconds: (json['durationSeconds'] as num).toInt(),
-  publishedAt: DateTime.parse(json['publishedAt'] as String),
+  durationSeconds: (json['duration_seconds'] as num).toInt(),
+  publishedAt: DateTime.parse(json['published_at'] as String),
+  youtubeVideoId: json['youtube_video_id'] as String?,
 );
 
 Map<String, dynamic> _$SermonModelToJson(_SermonModel instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'churchId': instance.churchId,
       'title': instance.title,
       'description': instance.description,
       'speaker': instance.speaker,
-      'mediaUrl': instance.mediaUrl,
-      'thumbnailUrl': instance.thumbnailUrl,
+      'media_url': instance.mediaUrl,
+      'thumbnail_url': instance.thumbnailUrl,
       'type': instance.type,
-      'durationSeconds': instance.durationSeconds,
-      'publishedAt': instance.publishedAt.toIso8601String(),
+      'duration_seconds': instance.durationSeconds,
+      'published_at': instance.publishedAt.toIso8601String(),
+      'youtube_video_id': instance.youtubeVideoId,
     };

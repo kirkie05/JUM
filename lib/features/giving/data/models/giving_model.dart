@@ -1,7 +1,6 @@
 class GivingTransaction {
   final String id;
   final String userId;
-  final String churchId;
   final double amount;
   final String currency;
   final String category; // tithe, offering, donation, seed
@@ -14,7 +13,6 @@ class GivingTransaction {
   const GivingTransaction({
     required this.id,
     required this.userId,
-    required this.churchId,
     required this.amount,
     required this.currency,
     required this.category,
@@ -28,7 +26,6 @@ class GivingTransaction {
   GivingTransaction copyWith({
     String? id,
     String? userId,
-    String? churchId,
     double? amount,
     String? currency,
     String? category,
@@ -41,7 +38,6 @@ class GivingTransaction {
     return GivingTransaction(
       id: id ?? this.id,
       userId: userId ?? this.userId,
-      churchId: churchId ?? this.churchId,
       amount: amount ?? this.amount,
       currency: currency ?? this.currency,
       category: category ?? this.category,
@@ -57,7 +53,6 @@ class GivingTransaction {
     return GivingTransaction(
       id: json['id'] as String,
       userId: json['user_id'] as String,
-      churchId: json['church_id'] as String,
       amount: (json['amount'] as num).toDouble(),
       currency: json['currency'] as String,
       category: json['category'] as String,
@@ -73,7 +68,6 @@ class GivingTransaction {
     return {
       'id': id,
       'user_id': userId,
-      'church_id': churchId,
       'amount': amount,
       'currency': currency,
       'category': category,

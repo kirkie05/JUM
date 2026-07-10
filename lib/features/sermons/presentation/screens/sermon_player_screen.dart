@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
 
 import '../../../../shared/widgets/jum_card.dart';
+import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/sermon_model.dart';
 import '../../data/providers/sermon_provider.dart';
 
@@ -25,28 +26,11 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializePlayback();
-    });
-  }
-
-  void _initializePlayback() {
-    final playerState = ref.read(sermonPlayerNotifierProvider);
-    if (playerState.sermon?.id != widget.sermonId) {
-      final sermonsList = ref.read(sermonsProvider).value;
-      final sermon = sermonsList?.firstWhere(
-            (s) => s.id == widget.sermonId,
-            orElse: () => _fallbackSermon(),
-          ) ??
-          _fallbackSermon();
-      ref.read(sermonPlayerNotifierProvider.notifier).play(sermon);
-    }
   }
 
   SermonModel _fallbackSermon() {
     return SermonModel(
       id: widget.sermonId,
-      churchId: 'jum-church-1',
       title: 'Living Unhindered',
       description: 'A powerful message on living unhindered in the grace of God.',
       speaker: 'Pastor Kingsley',
@@ -164,268 +148,310 @@ class _SermonPlayerScreenState extends ConsumerState<SermonPlayerScreen> {
   Widget build(BuildContext context) {
     final playerState = ref.watch(sermonPlayerNotifierProvider);
     final notifier = ref.read(sermonPlayerNotifierProvider.notifier);
+    final sermonDetailAsync = ref.watch(sermonDetailProvider(widget.sermonId));
 
-    final sermon = playerState.sermon ?? _fallbackSermon();
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        elevation: 0,
-        title: Text(
-          sermon.type == 'video' ? 'Video Sermon' : 'Audio Sermon',
-          style: const TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 20.0,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-            letterSpacing: -0.5,
-          ),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notes_rounded, color: Colors.white),
-            onPressed: () => _openNotesBottomSheet(context),
-          ),
-          IconButton(
-            icon: const Icon(Icons.download_rounded, color: Colors.white),
-            onPressed: _downloadSermon,
-          ),
-        ],
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(1.0),
-          child: Container(
-            color: const Color(0xFF1F1F1F),
-            height: 1.0,
-          ),
-        ),
-      ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (sermon.type == 'video') ...[
-                // Video Player Container
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
-                    ),
-                    child: notifier.videoController != null
-                        ? VideoPlayerWidget(
-                            controller: notifier.videoController!,
-                            playerState: playerState,
-                            notifier: notifier,
-                          )
-                        : const AspectRatio(
-                            aspectRatio: 16 / 9,
-                            child: Center(child: CircularProgressIndicator(color: Colors.white)),
-                          ),
-                  ),
-                ),
-                const Gap(24),
-              ] else ...[
-                // Audio Player visual card (280px container)
-                Center(
-                  child: Container(
-                    height: 280,
-                    width: 280,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1F1F1F),
-                      borderRadius: BorderRadius.circular(24.0),
-                      border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
-                    ),
-                    child: Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(24.0),
-                          child: Image.network(
-                            sermon.thumbnailUrl,
-                            height: double.infinity,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => Container(
-                              color: const Color(0xFF1F1F1F),
-                              child: const Icon(Icons.music_note_rounded, size: 80, color: Colors.white),
-                            ),
-                          ),
-                        ),
-                        // Waveform animation mock overlay
-                        if (playerState.isPlaying)
-                          Positioned.fill(
-                            child: Container(
-                              color: Colors.black54,
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: List.generate(5, (index) {
-                                  return AnimatedContainer(
-                                    duration: Duration(milliseconds: 200 + (index * 100)),
-                                    margin: const EdgeInsets.symmetric(horizontal: 4),
-                                    width: 8,
-                                    height: playerState.isPlaying ? 40.0 + (index * 8) % 30 : 15,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                  );
-                                }),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Gap(32),
-              ],
-
-              // Metadata
-              Text(
-                sermon.title,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                  letterSpacing: -0.5,
-                ),
-                textAlign: TextAlign.center,
+    return sermonDetailAsync.when(
+      data: (sermon) {
+        if (sermon == null) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: Text(
+                'Sermon not found',
+                style: TextStyle(color: Colors.white, fontFamily: 'Inter'),
               ),
-              const Gap(8),
-              Text(
-                sermon.speaker,
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 15.0,
-                  color: Color(0xFF8E8E8E),
-                ),
-                textAlign: TextAlign.center,
+            ),
+          );
+        }
+
+        // Initialize playback if not already playing this sermon
+        if (playerState.sermon?.id != sermon.id) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            notifier.play(sermon);
+          });
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            elevation: 0,
+            title: Text(
+              sermon.type == 'video' ? 'Video Sermon' : 'Audio Sermon',
+              style: const TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 20.0,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: -0.5,
               ),
-              const Gap(24),
-
-              // Audio Controls (SeekBar and Controls shown in single Column below meta)
-              if (sermon.type == 'audio') ...[
-                // Seek bar
-                Slider(
-                  value: playerState.position.inSeconds.toDouble(),
-                  max: playerState.duration.inSeconds.toDouble(),
-                  onChanged: (val) {
-                    notifier.seek(Duration(seconds: val.toInt()));
-                  },
-                  activeColor: Colors.white,
-                  inactiveColor: const Color(0xFF1F1F1F),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        _formatDuration(playerState.position),
-                        style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
-                      ),
-                      Text(
-                        _formatDuration(playerState.duration),
-                        style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
-                      ),
-                    ],
-                  ),
-                ),
-                const Gap(24),
-
-                // Control bar
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // Speed selector
-                    PopupMenuButton<double>(
-                      initialValue: playerState.speed,
-                      icon: Text(
-                        '${playerState.speed}x',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Inter'),
-                      ),
-                      color: const Color(0xFF161616),
-                      onSelected: (val) => notifier.setSpeed(val),
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(value: 0.75, child: Text('0.75x', style: TextStyle(color: Colors.white))),
-                        const PopupMenuItem(value: 1.0, child: Text('1.0x', style: TextStyle(color: Colors.white))),
-                        const PopupMenuItem(value: 1.25, child: Text('1.25x', style: TextStyle(color: Colors.white))),
-                        const PopupMenuItem(value: 1.5, child: Text('1.5x', style: TextStyle(color: Colors.white))),
-                        const PopupMenuItem(value: 2.0, child: Text('2.0x', style: TextStyle(color: Colors.white))),
-                      ],
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.replay_10_rounded, size: 36, color: Colors.white),
-                      onPressed: () => notifier.skipBack15(),
-                    ),
-                    GestureDetector(
-                      onTap: () {
-                        if (playerState.isPlaying) {
-                          notifier.pause();
-                        } else {
-                          notifier.resume();
-                        }
-                      },
-                      child: CircleAvatar(
-                        radius: 32,
-                        backgroundColor: Colors.white,
-                        child: Icon(
-                          playerState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          size: 40,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.forward_10_rounded, size: 36, color: Colors.white),
-                      onPressed: () => notifier.skipForward15(),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.stop_rounded, size: 28, color: Color(0xFF8E8E8E)),
-                      onPressed: () => notifier.stop(),
-                    ),
-                  ],
-                ),
-              ],
-
-              const Gap(32),
-              // Description Card
-              JumCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Sermon Description',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 16.0,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      sermon.description,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14.0,
-                        color: Color(0xFF8E8E8E),
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
+            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 20),
+              onPressed: () => Navigator.pop(context),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.notes_rounded, color: Colors.white),
+                onPressed: () => _openNotesBottomSheet(context),
+              ),
+              IconButton(
+                icon: const Icon(Icons.download_rounded, color: Colors.white),
+                onPressed: _downloadSermon,
               ),
             ],
+            bottom: PreferredSize(
+              preferredSize: const Size.fromHeight(1.0),
+              child: Container(
+                color: const Color(0xFF1F1F1F),
+                height: 1.0,
+              ),
+            ),
+          ),
+          body: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (sermon.type == 'video') ...[
+                    // Video Player Container
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16.0),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black,
+                          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
+                        ),
+                        child: notifier.videoController != null
+                            ? VideoPlayerWidget(
+                                controller: notifier.videoController!,
+                                playerState: playerState,
+                                notifier: notifier,
+                              )
+                            : AspectRatio(
+                                aspectRatio: 16 / 9,
+                                child: JumShimmer.card(height: double.infinity),
+                              ),
+                      ),
+                    ),
+                    const Gap(24),
+                  ] else ...[
+                    // Audio Player visual card (280px container)
+                    Center(
+                      child: Container(
+                        height: 280,
+                        width: 280,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1F1F1F),
+                          borderRadius: BorderRadius.circular(24.0),
+                          border: Border.all(color: Colors.white.withOpacity(0.1), width: 1.0),
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(24.0),
+                              child: Image.network(
+                                sermon.thumbnailUrl,
+                                height: double.infinity,
+                                width: double.infinity,
+                                fit: BoxFit.cover,
+                                errorBuilder: (c, e, s) => Container(
+                                  color: const Color(0xFF1F1F1F),
+                                  child: const Icon(Icons.music_note_rounded, size: 80, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                            // Waveform animation mock overlay
+                            if (playerState.isPlaying)
+                              Positioned.fill(
+                                child: Container(
+                                  color: Colors.black54,
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: List.generate(5, (index) {
+                                      return AnimatedContainer(
+                                        duration: Duration(milliseconds: 200 + (index * 100)),
+                                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                                        width: 8,
+                                        height: playerState.isPlaying ? 40.0 + (index * 8) % 30 : 15,
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                      );
+                                    }),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const Gap(32),
+                  ],
+
+                  // Metadata
+                  Text(
+                    sermon.title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 24.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Gap(8),
+                  Text(
+                    sermon.speaker,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15.0,
+                      color: Color(0xFF8E8E8E),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const Gap(24),
+
+                  // Audio Controls (SeekBar and Controls shown in single Column below meta)
+                  if (sermon.type == 'audio') ...[
+                    // Seek bar
+                    Slider(
+                      value: playerState.position.inSeconds.toDouble(),
+                      max: playerState.duration.inSeconds.toDouble(),
+                      onChanged: (val) {
+                        notifier.seek(Duration(seconds: val.toInt()));
+                      },
+                      activeColor: Colors.white,
+                      inactiveColor: const Color(0xFF1F1F1F),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            _formatDuration(playerState.position),
+                            style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
+                          ),
+                          Text(
+                            _formatDuration(playerState.duration),
+                            style: const TextStyle(color: Color(0xFF8E8E8E), fontSize: 12, fontFamily: 'Inter'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const Gap(24),
+
+                    // Control bar
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Speed selector
+                        PopupMenuButton<double>(
+                          initialValue: playerState.speed,
+                          icon: Text(
+                            '${playerState.speed}x',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14, fontFamily: 'Inter'),
+                          ),
+                          color: const Color(0xFF161616),
+                          onSelected: (val) => notifier.setSpeed(val),
+                          itemBuilder: (context) => [
+                            const PopupMenuItem(value: 0.75, child: Text('0.75x', style: TextStyle(color: Colors.white))),
+                            const PopupMenuItem(value: 1.0, child: Text('1.0x', style: TextStyle(color: Colors.white))),
+                            const PopupMenuItem(value: 1.25, child: Text('1.25x', style: TextStyle(color: Colors.white))),
+                            const PopupMenuItem(value: 1.5, child: Text('1.5x', style: TextStyle(color: Colors.white))),
+                            const PopupMenuItem(value: 2.0, child: Text('2.0x', style: TextStyle(color: Colors.white))),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.replay_10_rounded, size: 36, color: Colors.white),
+                          onPressed: () => notifier.skipBack15(),
+                        ),
+                        GestureDetector(
+                          onTap: () {
+                            if (playerState.isPlaying) {
+                              notifier.pause();
+                            } else {
+                              notifier.resume();
+                            }
+                          },
+                          child: CircleAvatar(
+                            radius: 32,
+                            backgroundColor: Colors.white,
+                            child: Icon(
+                              playerState.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                              size: 40,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.forward_10_rounded, size: 36, color: Colors.white),
+                          onPressed: () => notifier.skipForward15(),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.stop_rounded, size: 28, color: Color(0xFF8E8E8E)),
+                          onPressed: () => notifier.stop(),
+                        ),
+                      ],
+                    ),
+                  ],
+
+                  const Gap(32),
+                  // Description Card
+                  JumCard(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Sermon Description',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 16.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const Gap(8),
+                        Text(
+                          sermon.description,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14.0,
+                            color: Color(0xFF8E8E8E),
+                            height: 1.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+      loading: () => Scaffold(
+        backgroundColor: Colors.black,
+        body: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: JumShimmer.list(),
+        ),
+      ),
+      error: (err, st) => Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              'Failed to load sermon. Check your connection.',
+              style: const TextStyle(color: Colors.white, fontFamily: 'Inter'),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       ),
@@ -537,6 +563,23 @@ class _VideoPlayerWidgetState extends State<VideoPlayerWidget> {
                             _startHideTimer();
                             widget.notifier.skipForward15();
                           },
+                        ),
+                        const Gap(16),
+                        PopupMenuButton<double>(
+                          initialValue: widget.playerState.speed,
+                          tooltip: 'Playback Speed',
+                          icon: Text(
+                            '${widget.playerState.speed}x',
+                            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                          ),
+                          color: const Color(0xFF161616),
+                          onSelected: (val) => widget.notifier.setSpeed(val),
+                          itemBuilder: (context) => [0.75, 1.0, 1.25, 1.5, 2.0].map((s) {
+                            return PopupMenuItem(
+                              value: s,
+                              child: Text('${s}x', style: const TextStyle(color: Colors.white)),
+                            );
+                          }).toList(),
                         ),
                       ],
                     ),

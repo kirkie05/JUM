@@ -1,5 +1,6 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../features/auth/data/models/user_model.dart';
+import '../../features/auth/data/providers/auth_provider.dart';
 
 part 'current_user_provider.g.dart';
 
@@ -7,14 +8,6 @@ part 'current_user_provider.g.dart';
 class CurrentUser extends _$CurrentUser {
   @override
   AsyncValue<UserModel?> build() {
-    return AsyncValue.data(UserModel(
-      id: 'mock-user-id',
-      clerkId: 'mock-clerk-id',
-      name: 'John Doe',
-      email: 'john@example.com',
-      role: 'member',
-      churchId: 'jum-church-1',
-      createdAt: DateTime.now(),
-    ));
+    return ref.watch(authNotifierProvider);
   }
 }

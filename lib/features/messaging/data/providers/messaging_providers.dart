@@ -23,12 +23,37 @@ class SendMessageNotifier extends _$SendMessageNotifier {
     try {
       final currentUser = ref.read(currentUserProvider).value;
       if (currentUser == null) throw Exception('No user logged in');
-      await ref.read(messagingRepositoryProvider).sendMessage(currentUser.id, receiverId, body);
+      await ref.read(messagingRepositoryProvider).sendMessage(
+        senderId: currentUser.id,
+        receiverId: receiverId,
+        body: body,
+      );
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+
+  Future<void> sendGroupMessage(String conversationId, String body) async {
+    state = const AsyncValue.loading();
+    try {
+      final currentUser = ref.read(currentUserProvider).value;
+      if (currentUser == null) throw Exception('No user logged in');
+      await ref.read(messagingRepositoryProvider).sendMessage(
+        senderId: currentUser.id,
+        conversationId: conversationId,
+        body: body,
+      );
+      state = const AsyncValue.data(null);
+    } catch (e, st) {
+      state = AsyncValue.error(e, st);
+    }
+  }
+}
+
+@riverpod
+Stream<List<MessageModel>> groupConversation(GroupConversationRef ref, String conversationId) {
+  return ref.watch(messagingRepositoryProvider).watchGroupConversation(conversationId);
 }
 
 class RecentConversation {
@@ -49,12 +74,13 @@ Stream<List<RecentConversation>> recentConversations(RecentConversationsRef ref)
   if (currentUser == null) return Stream.value([]);
 
   return ref.watch(messagingRepositoryProvider).watchAllMessages(currentUser.id).asyncMap((messages) async {
-    final contacts = await ref.watch(messagingRepositoryProvider).fetchContacts(currentUser.churchId);
+    final contacts = await ref.watch(messagingRepositoryProvider).fetchContacts();
     final contactMap = {for (var c in contacts) c.id: c};
 
     final map = <String, List<MessageModel>>{};
     for (var msg in messages) {
       final peerId = msg.senderId == currentUser.id ? msg.receiverId : msg.senderId;
+      if (peerId == null) continue;
       map.putIfAbsent(peerId, () => []).add(msg);
     }
 
@@ -84,5 +110,5 @@ Stream<List<RecentConversation>> recentConversations(RecentConversationsRef ref)
 Future<List<UserModel>> contacts(ContactsRef ref) {
   final currentUser = ref.watch(currentUserProvider).value;
   if (currentUser == null) return Future.value([]);
-  return ref.watch(messagingRepositoryProvider).fetchContacts(currentUser.churchId);
+  return ref.watch(messagingRepositoryProvider).fetchContacts();
 }

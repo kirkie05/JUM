@@ -1,10 +1,15 @@
 import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:video_player/video_player.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../../../core/providers/current_user_provider.dart';
+import 'package:jum/features/media/data/providers/media_provider.dart';
+import 'package:jum/core/providers/current_user_provider.dart';
+import 'package:jum/core/services/media_stream_resolver.dart';
 import '../models/sermon_model.dart';
 import '../repositories/sermon_repository.dart';
 
@@ -12,8 +17,138 @@ part 'sermon_provider.g.dart';
 
 @riverpod
 Future<List<SermonModel>> sermons(SermonsRef ref) {
-  final churchId = ref.watch(currentUserProvider).value?.churchId ?? 'jum-church-1';
-  return ref.watch(sermonRepositoryProvider).fetchAll(churchId);
+  return ref.watch(sermonRepositoryProvider).fetchAll();
+}
+
+@riverpod
+class LatestSermon extends _$LatestSermon {
+  static const _cacheKey = 'cached_latest_sermon';
+
+  @override
+  FutureOr<SermonModel?> build() async {
+    // 1. Try to load cached sermon immediately
+    _loadCache().then((cached) {
+      if (cached != null && state.value == null) {
+        state = AsyncValue.data(cached);
+      }
+    });
+
+    // 2. Perform database and YouTube matches
+    return _fetchLatest();
+  }
+
+  Future<SermonModel?> _fetchLatest() async {
+    SermonModel? latest;
+    try {
+      final dbSermon = await ref.read(sermonRepositoryProvider).fetchLatestSermon();
+      latest = dbSermon;
+    } catch (e) {
+      debugPrint('[SERMON_PROVIDER] Error fetching latest sermon from repo: $e');
+    }
+
+    try {
+      final mediaRepo = ref.read(mediaRepositoryProvider);
+      final mediaItems = await mediaRepo.fetchMedia();
+      if (mediaItems.isNotEmpty) {
+        final latestMedia = mediaItems.first;
+        if (latest == null || (latestMedia.publishedAt != null && latestMedia.publishedAt!.isAfter(latest.publishedAt))) {
+          final ytId = latestMedia.id.replaceFirst('youtube-', '');
+          latest = SermonModel(
+            id: latestMedia.id,
+            title: latestMedia.title,
+            description: latestMedia.description ?? '',
+            speaker: 'Jesus Unhindered Ministry',
+            mediaUrl: latestMedia.sourceUrl,
+            thumbnailUrl: latestMedia.thumbnailUrl ?? '',
+            type: 'video',
+            durationSeconds: _parseDurationString(latestMedia.duration),
+            publishedAt: latestMedia.publishedAt ?? DateTime.now(),
+            youtubeVideoId: ytId,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('[SERMON_PROVIDER] Error matching latest media sermon: $e');
+    }
+
+    if (latest == null) {
+      try {
+        latest = ref.read(sermonRepositoryProvider).getSeededFallbackSermon();
+      } catch (e) {
+        debugPrint('[SERMON_PROVIDER] Error getting fallback sermon: $e');
+      }
+    }
+
+    if (latest != null) {
+      _saveCache(latest);
+    }
+    return latest;
+  }
+
+  Future<SermonModel?> _loadCache() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final dataStr = prefs.getString(_cacheKey);
+      if (dataStr != null) {
+        return SermonModel.fromJson(jsonDecode(dataStr) as Map<String, dynamic>);
+      }
+    } catch (e) {
+      debugPrint('[SERMON_PROVIDER] Error loading cached latest sermon: $e');
+    }
+    return null;
+  }
+
+  Future<void> _saveCache(SermonModel sermon) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cacheKey, jsonEncode(sermon.toJson()));
+    } catch (e) {
+      debugPrint('[SERMON_PROVIDER] Error caching latest sermon: $e');
+    }
+  }
+}
+
+final sermonDetailProvider = FutureProvider.family<SermonModel?, String>((ref, id) async {
+  if (id.startsWith('youtube-')) {
+    final ytId = id.replaceFirst('youtube-', '');
+    final ytService = ref.watch(youtubeServiceProvider);
+    final video = await ytService.fetchVideoDetails(ytId);
+    if (video != null) {
+      return SermonModel(
+        id: id,
+        title: video.title,
+        description: video.description ?? '',
+        speaker: 'Jesus Unhindered Ministry',
+        mediaUrl: video.sourceUrl,
+        thumbnailUrl: video.thumbnailUrl ?? '',
+        type: 'video',
+        durationSeconds: _parseDurationString(video.duration),
+        publishedAt: video.publishedAt ?? DateTime.now(),
+        youtubeVideoId: ytId,
+      );
+    }
+    return null;
+  } else {
+    final repo = ref.watch(sermonRepositoryProvider);
+    // Convert stream to future by taking first emission
+    return repo.watchSermon(id).first;
+  }
+});
+
+int _parseDurationString(String? duration) {
+  if (duration == null || duration.isEmpty) return 0;
+  final parts = duration.split(':');
+  if (parts.length == 2) {
+    final m = int.tryParse(parts[0]) ?? 0;
+    final s = int.tryParse(parts[1]) ?? 0;
+    return m * 60 + s;
+  } else if (parts.length == 3) {
+    final h = int.tryParse(parts[0]) ?? 0;
+    final m = int.tryParse(parts[1]) ?? 0;
+    final s = int.tryParse(parts[2]) ?? 0;
+    return h * 3600 + m * 60 + s;
+  }
+  return 0;
 }
 
 // -------------------------------------------------------------
@@ -90,9 +225,11 @@ class SermonPlayerNotifier extends _$SermonPlayerNotifier {
     );
 
     if (sermon.type == 'video') {
-      _videoController = VideoPlayerController.networkUrl(Uri.parse(sermon.mediaUrl));
-      _videoController!.addListener(_videoListener);
       try {
+        final playableUrl = await MediaStreamResolver.resolveNativeStreamUrl(sermon.mediaUrl);
+        print('[STREAM_URL] Resolved URL: $playableUrl');
+        _videoController = VideoPlayerController.networkUrl(Uri.parse(playableUrl));
+        _videoController!.addListener(_videoListener);
         await _videoController!.initialize();
         await _videoController!.play();
         state = state.copyWith(
@@ -232,8 +369,7 @@ class SermonSearchNotifier extends _$SermonSearchNotifier {
     state = SermonSearchState(query: q, results: state.results, isLoading: true);
     _debounceTimer = Timer(const Duration(milliseconds: 400), () async {
       try {
-        final churchId = ref.read(currentUserProvider).value?.churchId ?? 'jum-church-1';
-        final results = await ref.read(sermonRepositoryProvider).search(churchId, q);
+        final results = await ref.read(sermonRepositoryProvider).search(q);
         state = SermonSearchState(query: q, results: results, isLoading: false);
       } catch (e) {
         state = SermonSearchState(query: q, results: const [], isLoading: false);

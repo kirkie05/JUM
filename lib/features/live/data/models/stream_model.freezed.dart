@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$LiveStreamModel {
 
- String get id; String get churchId; String get muxStreamId; String get muxPlaybackId; String get title; String get status; DateTime get scheduledAt;
+ String get id; String get muxStreamId; String get muxPlaybackId; String get title; String get status; DateTime get scheduledAt;
 /// Create a copy of LiveStreamModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $LiveStreamModelCopyWith<LiveStreamModel> get copyWith => _$LiveStreamModelCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveStreamModel&&(identical(other.id, id) || other.id == id)&&(identical(other.churchId, churchId) || other.churchId == churchId)&&(identical(other.muxStreamId, muxStreamId) || other.muxStreamId == muxStreamId)&&(identical(other.muxPlaybackId, muxPlaybackId) || other.muxPlaybackId == muxPlaybackId)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is LiveStreamModel&&(identical(other.id, id) || other.id == id)&&(identical(other.muxStreamId, muxStreamId) || other.muxStreamId == muxStreamId)&&(identical(other.muxPlaybackId, muxPlaybackId) || other.muxPlaybackId == muxPlaybackId)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,churchId,muxStreamId,muxPlaybackId,title,status,scheduledAt);
+int get hashCode => Object.hash(runtimeType,id,muxStreamId,muxPlaybackId,title,status,scheduledAt);
 
 @override
 String toString() {
-  return 'LiveStreamModel(id: $id, churchId: $churchId, muxStreamId: $muxStreamId, muxPlaybackId: $muxPlaybackId, title: $title, status: $status, scheduledAt: $scheduledAt)';
+  return 'LiveStreamModel(id: $id, muxStreamId: $muxStreamId, muxPlaybackId: $muxPlaybackId, title: $title, status: $status, scheduledAt: $scheduledAt)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $LiveStreamModelCopyWith<$Res>  {
   factory $LiveStreamModelCopyWith(LiveStreamModel value, $Res Function(LiveStreamModel) _then) = _$LiveStreamModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String churchId, String muxStreamId, String muxPlaybackId, String title, String status, DateTime scheduledAt
+ String id, String muxStreamId, String muxPlaybackId, String title, String status, DateTime scheduledAt
 });
 
 
@@ -65,10 +65,9 @@ class _$LiveStreamModelCopyWithImpl<$Res>
 
 /// Create a copy of LiveStreamModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? churchId = null,Object? muxStreamId = null,Object? muxPlaybackId = null,Object? title = null,Object? status = null,Object? scheduledAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? muxStreamId = null,Object? muxPlaybackId = null,Object? title = null,Object? status = null,Object? scheduledAt = null,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,churchId: null == churchId ? _self.churchId : churchId // ignore: cast_nullable_to_non_nullable
 as String,muxStreamId: null == muxStreamId ? _self.muxStreamId : muxStreamId // ignore: cast_nullable_to_non_nullable
 as String,muxPlaybackId: null == muxPlaybackId ? _self.muxPlaybackId : muxPlaybackId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
@@ -159,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String churchId,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _LiveStreamModel() when $default != null:
-return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
+return $default(_that.id,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
   return orElse();
 
 }
@@ -180,10 +179,10 @@ return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String churchId,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)  $default,) {final _that = this;
 switch (_that) {
 case _LiveStreamModel():
-return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
+return $default(_that.id,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +199,10 @@ return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_t
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String churchId,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String muxStreamId,  String muxPlaybackId,  String title,  String status,  DateTime scheduledAt)?  $default,) {final _that = this;
 switch (_that) {
 case _LiveStreamModel() when $default != null:
-return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
+return $default(_that.id,_that.muxStreamId,_that.muxPlaybackId,_that.title,_that.status,_that.scheduledAt);case _:
   return null;
 
 }
@@ -215,11 +214,10 @@ return $default(_that.id,_that.churchId,_that.muxStreamId,_that.muxPlaybackId,_t
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _LiveStreamModel implements LiveStreamModel {
-  const _LiveStreamModel({required this.id, required this.churchId, required this.muxStreamId, required this.muxPlaybackId, required this.title, required this.status, required this.scheduledAt});
+  const _LiveStreamModel({required this.id, required this.muxStreamId, required this.muxPlaybackId, required this.title, required this.status, required this.scheduledAt});
   factory _LiveStreamModel.fromJson(Map<String, dynamic> json) => _$LiveStreamModelFromJson(json);
 
 @override final  String id;
-@override final  String churchId;
 @override final  String muxStreamId;
 @override final  String muxPlaybackId;
 @override final  String title;
@@ -239,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveStreamModel&&(identical(other.id, id) || other.id == id)&&(identical(other.churchId, churchId) || other.churchId == churchId)&&(identical(other.muxStreamId, muxStreamId) || other.muxStreamId == muxStreamId)&&(identical(other.muxPlaybackId, muxPlaybackId) || other.muxPlaybackId == muxPlaybackId)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _LiveStreamModel&&(identical(other.id, id) || other.id == id)&&(identical(other.muxStreamId, muxStreamId) || other.muxStreamId == muxStreamId)&&(identical(other.muxPlaybackId, muxPlaybackId) || other.muxPlaybackId == muxPlaybackId)&&(identical(other.title, title) || other.title == title)&&(identical(other.status, status) || other.status == status)&&(identical(other.scheduledAt, scheduledAt) || other.scheduledAt == scheduledAt));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,churchId,muxStreamId,muxPlaybackId,title,status,scheduledAt);
+int get hashCode => Object.hash(runtimeType,id,muxStreamId,muxPlaybackId,title,status,scheduledAt);
 
 @override
 String toString() {
-  return 'LiveStreamModel(id: $id, churchId: $churchId, muxStreamId: $muxStreamId, muxPlaybackId: $muxPlaybackId, title: $title, status: $status, scheduledAt: $scheduledAt)';
+  return 'LiveStreamModel(id: $id, muxStreamId: $muxStreamId, muxPlaybackId: $muxPlaybackId, title: $title, status: $status, scheduledAt: $scheduledAt)';
 }
 
 
@@ -259,7 +257,7 @@ abstract mixin class _$LiveStreamModelCopyWith<$Res> implements $LiveStreamModel
   factory _$LiveStreamModelCopyWith(_LiveStreamModel value, $Res Function(_LiveStreamModel) _then) = __$LiveStreamModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String churchId, String muxStreamId, String muxPlaybackId, String title, String status, DateTime scheduledAt
+ String id, String muxStreamId, String muxPlaybackId, String title, String status, DateTime scheduledAt
 });
 
 
@@ -276,10 +274,9 @@ class __$LiveStreamModelCopyWithImpl<$Res>
 
 /// Create a copy of LiveStreamModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? churchId = null,Object? muxStreamId = null,Object? muxPlaybackId = null,Object? title = null,Object? status = null,Object? scheduledAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? muxStreamId = null,Object? muxPlaybackId = null,Object? title = null,Object? status = null,Object? scheduledAt = null,}) {
   return _then(_LiveStreamModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
-as String,churchId: null == churchId ? _self.churchId : churchId // ignore: cast_nullable_to_non_nullable
 as String,muxStreamId: null == muxStreamId ? _self.muxStreamId : muxStreamId // ignore: cast_nullable_to_non_nullable
 as String,muxPlaybackId: null == muxPlaybackId ? _self.muxPlaybackId : muxPlaybackId // ignore: cast_nullable_to_non_nullable
 as String,title: null == title ? _self.title : title // ignore: cast_nullable_to_non_nullable

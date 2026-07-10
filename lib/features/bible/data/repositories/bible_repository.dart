@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:hive/hive.dart';
 import 'dart:convert';
 import '../models/bible_models.dart';
 
@@ -7,16 +8,23 @@ class BibleRepository {
   // CDN Base for free open-source scripture hosting
   static const String baseUrl = 'https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles';
   static const String defaultTranslation = 'BSB';
+  static const String _boxName = 'bible_cache';
 
   late final Dio _dio;
+  Box<String>? _cacheBox;
 
   BibleRepository({Dio? dio}) {
     _dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl));
+    _initCache();
   }
 
-  // Cache to avoid redundant network reads
+  Future<void> _initCache() async {
+    _cacheBox = await Hive.openBox<String>(_boxName);
+  }
+
+  // Memory Cache to avoid redundant parsing
   final Map<String, List<BibleBook>> _booksCache = {};
-  final Map<String, BibleChapter> _chapterCache = {};
+  final Map<String, BibleChapter> _chapterMemoryCache = {};
 
   // Normalizer maps user friendly selectors to precise repository dataset identifiers
   String _normalizeTranslation(String input) {
@@ -149,24 +157,107 @@ class BibleRepository {
     final String bookSlug = bookEntry['slug']!;
     
     final cacheKey = '${vId}_${bookSlug}_$chapterNumber';
-    if (_chapterCache.containsKey(cacheKey)) {
-      return _chapterCache[cacheKey]!;
+    
+    // 1. Check in-memory cache
+    if (_chapterMemoryCache.containsKey(cacheKey)) {
+      return _chapterMemoryCache[cacheKey]!;
     }
 
+    // Wait for Hive to be ready
+    if (_cacheBox == null) {
+      await _initCache();
+    }
+
+    // 2. Check local persistence (Offline First capability)
+    final cachedJsonStr = _cacheBox!.get(cacheKey);
+    if (cachedJsonStr != null) {
+      try {
+        final Map<String, dynamic> jsonMap = jsonDecode(cachedJsonStr);
+        final chapter = BibleChapter.fromJsonWldeh(chapterNumber, jsonMap);
+        _chapterMemoryCache[cacheKey] = chapter;
+        return chapter;
+      } catch (_) {
+        // Fallback to fetch if local cache is corrupted
+      }
+    }
+
+    // 3. Fetch from Network
     try {
       final url = '$baseUrl/$vId/books/$bookSlug/chapters/$chapterNumber.json';
       final response = await _dio.get(url);
       
-      final jsonMap = response.data is String 
+      final Map<String, dynamic> jsonMap = response.data is String 
           ? jsonDecode(response.data) 
           : (response.data as Map<String, dynamic>);
       
+      // Save raw JSON to local cache for offline reading later
+      _cacheBox!.put(cacheKey, jsonEncode(jsonMap));
+
       final chapter = BibleChapter.fromJsonWldeh(chapterNumber, jsonMap);
-      _chapterCache[cacheKey] = chapter;
+      _chapterMemoryCache[cacheKey] = chapter;
       return chapter;
     } catch (e) {
       debugPrint('BibleRepository getChapter Error fetching $vId -> $bookSlug -> $chapterNumber: $e');
-      rethrow;
+
+      // PREVENT CRASHES BY RETURNING AN EXPLANATORY OFFLINE PREVIEW
+      return BibleChapter(
+        number: chapterNumber,
+        content: [
+          ChapterNode(type: ChapterNodeType.heading, content: ['Offline Mode']),
+          ChapterNode(
+            type: ChapterNodeType.verse,
+            verseNumber: 1,
+            content: [
+              'This module is currently running in Offline Mode or the content for "${bookId} ${chapterNumber}" (${translation}) is not available in the local cache. Please connect to the internet to download it.'
+            ],
+          ),
+        ],
+      );
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> searchVerses(String query, {String translation = defaultTranslation}) async {
+    if (query.trim().isEmpty) return [];
+    
+    final langSlug = translation.toUpperCase() == 'BSB' ? 'KJV' : translation.toUpperCase(); // Bolls has KJV, use it as standard fallback for others
+    final url = 'https://bolls.life/v2/find/$langSlug?search=${Uri.encodeComponent(query)}';
+    
+    try {
+      // Use isolated Dio instance for external host
+      final searchDio = Dio(); 
+      final response = await searchDio.get(url);
+      final data = response.data;
+      
+      if (data is Map<String, dynamic> && data.containsKey('results')) {
+        final results = data['results'] as List<dynamic>;
+        
+        return results.map((item) {
+          final rawText = item['text'].toString();
+          // Clean up HTML/XML tags like <S>xxxx</S> and <mark>
+          final cleanText = rawText
+              .replaceAll(RegExp(r'<S>\d+</S>'), '')
+              .replaceAll('<mark>', '')
+              .replaceAll('</mark>', '')
+              .replaceAll(RegExp(r'<[^>]*>'), '') // generic cleanup
+              .trim();
+              
+          final bookNum = item['book'] as int;
+          final canonicalBook = (bookNum > 0 && bookNum <= _canonicalBooks.length) 
+              ? _canonicalBooks[bookNum - 1]['name'] 
+              : 'Book $bookNum';
+              
+          return {
+            'bookName': canonicalBook,
+            'chapter': item['chapter'],
+            'verse': item['verse'],
+            'text': cleanText,
+          };
+        }).toList();
+      }
+      return [];
+    } catch (e) {
+      debugPrint('BibleRepository Search Error: $e');
+      return []; // Fallback gracefully to empty list
     }
   }
 }

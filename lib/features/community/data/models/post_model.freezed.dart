@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$PostModel {
 
- String get id; String get userId; String get churchId; String get body; String? get mediaUrl; String? get mediaType; int get likesCount; DateTime get createdAt; String? get authorName; String? get authorAvatarUrl; bool? get isLikedByMe;
+ String get id; String get userId; String get body; String? get mediaUrl; String? get mediaType; int get likesCount; DateTime get createdAt; String? get authorName; String? get authorAvatarUrl; bool? get isLikedByMe;
 /// Create a copy of PostModel
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $PostModelCopyWith<PostModel> get copyWith => _$PostModelCopyWithImpl<PostModel>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is PostModel&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.churchId, churchId) || other.churchId == churchId)&&(identical(other.body, body) || other.body == body)&&(identical(other.mediaUrl, mediaUrl) || other.mediaUrl == mediaUrl)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.likesCount, likesCount) || other.likesCount == likesCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.authorAvatarUrl, authorAvatarUrl) || other.authorAvatarUrl == authorAvatarUrl)&&(identical(other.isLikedByMe, isLikedByMe) || other.isLikedByMe == isLikedByMe));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is PostModel&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.body, body) || other.body == body)&&(identical(other.mediaUrl, mediaUrl) || other.mediaUrl == mediaUrl)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.likesCount, likesCount) || other.likesCount == likesCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.authorAvatarUrl, authorAvatarUrl) || other.authorAvatarUrl == authorAvatarUrl)&&(identical(other.isLikedByMe, isLikedByMe) || other.isLikedByMe == isLikedByMe));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,churchId,body,mediaUrl,mediaType,likesCount,createdAt,authorName,authorAvatarUrl,isLikedByMe);
+int get hashCode => Object.hash(runtimeType,id,userId,body,mediaUrl,mediaType,likesCount,createdAt,authorName,authorAvatarUrl,isLikedByMe);
 
 @override
 String toString() {
-  return 'PostModel(id: $id, userId: $userId, churchId: $churchId, body: $body, mediaUrl: $mediaUrl, mediaType: $mediaType, likesCount: $likesCount, createdAt: $createdAt, authorName: $authorName, authorAvatarUrl: $authorAvatarUrl, isLikedByMe: $isLikedByMe)';
+  return 'PostModel(id: $id, userId: $userId, body: $body, mediaUrl: $mediaUrl, mediaType: $mediaType, likesCount: $likesCount, createdAt: $createdAt, authorName: $authorName, authorAvatarUrl: $authorAvatarUrl, isLikedByMe: $isLikedByMe)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $PostModelCopyWith<$Res>  {
   factory $PostModelCopyWith(PostModel value, $Res Function(PostModel) _then) = _$PostModelCopyWithImpl;
 @useResult
 $Res call({
- String id, String userId, String churchId, String body, String? mediaUrl, String? mediaType, int likesCount, DateTime createdAt, String? authorName, String? authorAvatarUrl, bool? isLikedByMe
+ String id, String userId, String body, String? mediaUrl, String? mediaType, int likesCount, DateTime createdAt, String? authorName, String? authorAvatarUrl, bool? isLikedByMe
 });
 
 
@@ -65,11 +65,10 @@ class _$PostModelCopyWithImpl<$Res>
 
 /// Create a copy of PostModel
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? churchId = null,Object? body = null,Object? mediaUrl = freezed,Object? mediaType = freezed,Object? likesCount = null,Object? createdAt = null,Object? authorName = freezed,Object? authorAvatarUrl = freezed,Object? isLikedByMe = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? id = null,Object? userId = null,Object? body = null,Object? mediaUrl = freezed,Object? mediaType = freezed,Object? likesCount = null,Object? createdAt = null,Object? authorName = freezed,Object? authorAvatarUrl = freezed,Object? isLikedByMe = freezed,}) {
   return _then(_self.copyWith(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,churchId: null == churchId ? _self.churchId : churchId // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,mediaUrl: freezed == mediaUrl ? _self.mediaUrl : mediaUrl // ignore: cast_nullable_to_non_nullable
 as String?,mediaType: freezed == mediaType ? _self.mediaType : mediaType // ignore: cast_nullable_to_non_nullable
@@ -163,10 +162,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String churchId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String id,  String userId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _PostModel() when $default != null:
-return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
+return $default(_that.id,_that.userId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
   return orElse();
 
 }
@@ -184,10 +183,10 @@ return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String churchId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String id,  String userId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)  $default,) {final _that = this;
 switch (_that) {
 case _PostModel():
-return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
+return $default(_that.id,_that.userId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -204,10 +203,10 @@ return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String churchId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String id,  String userId,  String body,  String? mediaUrl,  String? mediaType,  int likesCount,  DateTime createdAt,  String? authorName,  String? authorAvatarUrl,  bool? isLikedByMe)?  $default,) {final _that = this;
 switch (_that) {
 case _PostModel() when $default != null:
-return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
+return $default(_that.id,_that.userId,_that.body,_that.mediaUrl,_that.mediaType,_that.likesCount,_that.createdAt,_that.authorName,_that.authorAvatarUrl,_that.isLikedByMe);case _:
   return null;
 
 }
@@ -219,12 +218,11 @@ return $default(_that.id,_that.userId,_that.churchId,_that.body,_that.mediaUrl,_
 
 @JsonSerializable(fieldRename: FieldRename.snake)
 class _PostModel implements PostModel {
-  const _PostModel({required this.id, required this.userId, required this.churchId, required this.body, this.mediaUrl, this.mediaType, required this.likesCount, required this.createdAt, this.authorName, this.authorAvatarUrl, this.isLikedByMe});
+  const _PostModel({required this.id, required this.userId, required this.body, this.mediaUrl, this.mediaType, required this.likesCount, required this.createdAt, this.authorName, this.authorAvatarUrl, this.isLikedByMe});
   factory _PostModel.fromJson(Map<String, dynamic> json) => _$PostModelFromJson(json);
 
 @override final  String id;
 @override final  String userId;
-@override final  String churchId;
 @override final  String body;
 @override final  String? mediaUrl;
 @override final  String? mediaType;
@@ -247,16 +245,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PostModel&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.churchId, churchId) || other.churchId == churchId)&&(identical(other.body, body) || other.body == body)&&(identical(other.mediaUrl, mediaUrl) || other.mediaUrl == mediaUrl)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.likesCount, likesCount) || other.likesCount == likesCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.authorAvatarUrl, authorAvatarUrl) || other.authorAvatarUrl == authorAvatarUrl)&&(identical(other.isLikedByMe, isLikedByMe) || other.isLikedByMe == isLikedByMe));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _PostModel&&(identical(other.id, id) || other.id == id)&&(identical(other.userId, userId) || other.userId == userId)&&(identical(other.body, body) || other.body == body)&&(identical(other.mediaUrl, mediaUrl) || other.mediaUrl == mediaUrl)&&(identical(other.mediaType, mediaType) || other.mediaType == mediaType)&&(identical(other.likesCount, likesCount) || other.likesCount == likesCount)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.authorName, authorName) || other.authorName == authorName)&&(identical(other.authorAvatarUrl, authorAvatarUrl) || other.authorAvatarUrl == authorAvatarUrl)&&(identical(other.isLikedByMe, isLikedByMe) || other.isLikedByMe == isLikedByMe));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,userId,churchId,body,mediaUrl,mediaType,likesCount,createdAt,authorName,authorAvatarUrl,isLikedByMe);
+int get hashCode => Object.hash(runtimeType,id,userId,body,mediaUrl,mediaType,likesCount,createdAt,authorName,authorAvatarUrl,isLikedByMe);
 
 @override
 String toString() {
-  return 'PostModel(id: $id, userId: $userId, churchId: $churchId, body: $body, mediaUrl: $mediaUrl, mediaType: $mediaType, likesCount: $likesCount, createdAt: $createdAt, authorName: $authorName, authorAvatarUrl: $authorAvatarUrl, isLikedByMe: $isLikedByMe)';
+  return 'PostModel(id: $id, userId: $userId, body: $body, mediaUrl: $mediaUrl, mediaType: $mediaType, likesCount: $likesCount, createdAt: $createdAt, authorName: $authorName, authorAvatarUrl: $authorAvatarUrl, isLikedByMe: $isLikedByMe)';
 }
 
 
@@ -267,7 +265,7 @@ abstract mixin class _$PostModelCopyWith<$Res> implements $PostModelCopyWith<$Re
   factory _$PostModelCopyWith(_PostModel value, $Res Function(_PostModel) _then) = __$PostModelCopyWithImpl;
 @override @useResult
 $Res call({
- String id, String userId, String churchId, String body, String? mediaUrl, String? mediaType, int likesCount, DateTime createdAt, String? authorName, String? authorAvatarUrl, bool? isLikedByMe
+ String id, String userId, String body, String? mediaUrl, String? mediaType, int likesCount, DateTime createdAt, String? authorName, String? authorAvatarUrl, bool? isLikedByMe
 });
 
 
@@ -284,11 +282,10 @@ class __$PostModelCopyWithImpl<$Res>
 
 /// Create a copy of PostModel
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? churchId = null,Object? body = null,Object? mediaUrl = freezed,Object? mediaType = freezed,Object? likesCount = null,Object? createdAt = null,Object? authorName = freezed,Object? authorAvatarUrl = freezed,Object? isLikedByMe = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? userId = null,Object? body = null,Object? mediaUrl = freezed,Object? mediaType = freezed,Object? likesCount = null,Object? createdAt = null,Object? authorName = freezed,Object? authorAvatarUrl = freezed,Object? isLikedByMe = freezed,}) {
   return _then(_PostModel(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,userId: null == userId ? _self.userId : userId // ignore: cast_nullable_to_non_nullable
-as String,churchId: null == churchId ? _self.churchId : churchId // ignore: cast_nullable_to_non_nullable
 as String,body: null == body ? _self.body : body // ignore: cast_nullable_to_non_nullable
 as String,mediaUrl: freezed == mediaUrl ? _self.mediaUrl : mediaUrl // ignore: cast_nullable_to_non_nullable
 as String?,mediaType: freezed == mediaType ? _self.mediaType : mediaType // ignore: cast_nullable_to_non_nullable

@@ -7,15 +7,15 @@ part 'sermon_model.g.dart';
 abstract class SermonModel with _$SermonModel {
   const factory SermonModel({
     required String id,
-    required String churchId,
     required String title,
     required String description,
     required String speaker,
-    required String mediaUrl,
-    required String thumbnailUrl,
+    @JsonKey(name: 'media_url') required String mediaUrl,
+    @JsonKey(name: 'thumbnail_url') required String thumbnailUrl,
     required String type,
-    required int durationSeconds,
-    required DateTime publishedAt,
+    @JsonKey(name: 'duration_seconds') required int durationSeconds,
+    @JsonKey(name: 'published_at') required DateTime publishedAt,
+    @JsonKey(name: 'youtube_video_id') String? youtubeVideoId,
   }) = _SermonModel;
 
   factory SermonModel.fromJson(Map<String, dynamic> json) =>

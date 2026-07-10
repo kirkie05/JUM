@@ -6,6 +6,7 @@ import '../../../../core/constants/app_sizes.dart';
 import '../../../../shared/widgets/jum_app_bar.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // -------------------------------------------------------------
 // PROFILE SCREEN
@@ -457,6 +458,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _streamAlerts = true;
   bool _highContrast = false;
 
+  bool _bibleReminderEnabled = false;
+  TimeOfDay _bibleReminderTime = const TimeOfDay(hour: 8, minute: 0);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPrefs();
+  }
+
+  Future<void> _loadPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _bibleReminderEnabled = prefs.getBool('bible_reminder_enabled') ?? false;
+      final hour = prefs.getInt('bible_reminder_hour') ?? 8;
+      final minute = prefs.getInt('bible_reminder_minute') ?? 0;
+      _bibleReminderTime = TimeOfDay(hour: hour, minute: minute);
+    });
+  }
+
+  Future<void> _saveReminderSettings(bool enabled, TimeOfDay time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('bible_reminder_enabled', enabled);
+    await prefs.setInt('bible_reminder_hour', time.hour);
+    await prefs.setInt('bible_reminder_minute', time.minute);
+    debugPrint('Daily Bible reminder configured to $enabled at ${time.hour}:${time.minute}');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -497,6 +525,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _streamAlerts,
                     (val) => setState(() => _streamAlerts = val),
                   ),
+                  const Divider(color: AppColors.divider, height: 1),
+                  _buildToggleRow(
+                    'Daily Bible Reminder',
+                    'Get a daily reminder to read the Bible',
+                    _bibleReminderEnabled,
+                    (val) {
+                      setState(() => _bibleReminderEnabled = val);
+                      _saveReminderSettings(val, _bibleReminderTime);
+                    },
+                  ),
+                  if (_bibleReminderEnabled) ...[
+                    const Divider(color: AppColors.divider, height: 1),
+                    ListTile(
+                      title: const Text(
+                        'Reminder Time',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 15.0,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      subtitle: Text(
+                        'Scheduled for ${_bibleReminderTime.format(context)}',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12.0,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      trailing: const Icon(Icons.access_time, color: AppColors.primary),
+                      onTap: () async {
+                        final selectedTime = await showTimePicker(
+                          context: context,
+                          initialTime: _bibleReminderTime,
+                        );
+                        if (selectedTime != null) {
+                          setState(() => _bibleReminderTime = selectedTime);
+                          _saveReminderSettings(_bibleReminderEnabled, selectedTime);
+                        }
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),

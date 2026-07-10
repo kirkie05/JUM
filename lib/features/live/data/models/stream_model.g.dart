@@ -9,7 +9,6 @@ part of 'stream_model.dart';
 _LiveStreamModel _$LiveStreamModelFromJson(Map<String, dynamic> json) =>
     _LiveStreamModel(
       id: json['id'] as String,
-      churchId: json['church_id'] as String,
       muxStreamId: json['mux_stream_id'] as String,
       muxPlaybackId: json['mux_playback_id'] as String,
       title: json['title'] as String,
@@ -20,7 +19,6 @@ _LiveStreamModel _$LiveStreamModelFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$LiveStreamModelToJson(_LiveStreamModel instance) =>
     <String, dynamic>{
       'id': instance.id,
-      'church_id': instance.churchId,
       'mux_stream_id': instance.muxStreamId,
       'mux_playback_id': instance.muxPlaybackId,
       'title': instance.title,

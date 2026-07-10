@@ -22,6 +22,18 @@ class MessagingRepository {
         });
   }
 
+  Stream<List<MessageModel>> watchGroupConversation(String conversationId) {
+    return _supabase
+        .from('messages')
+        .stream(primaryKey: ['id'])
+        .eq('conversation_id', conversationId)
+        .map((maps) {
+          final msgs = maps.map((m) => MessageModel.fromJson(m)).toList();
+          msgs.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          return msgs;
+        });
+  }
+
   Stream<List<MessageModel>> watchAllMessages(String userId) {
     return _supabase
         .from('messages')
@@ -32,10 +44,41 @@ class MessagingRepository {
         });
   }
 
-  Future<void> sendMessage(String senderId, String receiverId, String body) async {
+  Future<void> sendMessage({
+    required String senderId,
+    required String body,
+    String? receiverId,
+    String? conversationId,
+  }) async {
+    String? activeConversationId = conversationId;
+
+    if (activeConversationId == null && receiverId != null) {
+      final existingMessages = await _supabase
+          .from('messages')
+          .select('conversation_id')
+          .or('and(sender_id.eq.$senderId,receiver_id.eq.$receiverId),and(sender_id.eq.$receiverId,receiver_id.eq.$senderId)')
+          .limit(1);
+
+      if (existingMessages != null && (existingMessages as List).isNotEmpty) {
+        activeConversationId = existingMessages[0]['conversation_id'] as String?;
+      }
+
+      if (activeConversationId == null) {
+        final newConversation = await _supabase
+            .from('conversations')
+            .insert({
+              'is_group': false,
+            })
+            .select('id')
+            .single();
+        activeConversationId = newConversation['id'] as String?;
+      }
+    }
+
     await _supabase.from('messages').insert({
       'sender_id': senderId,
       'receiver_id': receiverId,
+      'conversation_id': activeConversationId,
       'body': body,
       'created_at': DateTime.now().toIso8601String(),
     });
@@ -48,11 +91,10 @@ class MessagingRepository {
         .eq('id', messageId);
   }
 
-  Future<List<UserModel>> fetchContacts(String churchId) async {
+  Future<List<UserModel>> fetchContacts() async {
     final res = await _supabase
-        .from('users')
-        .select()
-        .eq('church_id', churchId);
+        .from('profiles')
+        .select();
     return (res as List).map((u) => UserModel.fromJson(u)).toList();
   }
 }

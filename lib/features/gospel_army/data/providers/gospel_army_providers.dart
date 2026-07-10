@@ -9,8 +9,7 @@ import '../models/quiz_attempt.dart';
 import '../repositories/gospel_army_repository.dart';
 
 final coursesProvider = FutureProvider<List<CourseModel>>((ref) async {
-  final churchId = ref.watch(currentUserProvider).value?.churchId ?? 'jum-church-1';
-  return ref.watch(gospelArmyRepositoryProvider).fetchCourses(churchId);
+  return ref.watch(gospelArmyRepositoryProvider).fetchCourses();
 });
 
 final courseProvider = FutureProvider.family<CourseModel, String>((ref, courseId) async {
