@@ -13,7 +13,6 @@ void main() {
     final mockPost = PostModel(
       id: 'post_123',
       userId: 'user_1',
-      churchId: 'church_1',
       body: 'Welcome to Jesus Unhindered Ministry community!',
       likesCount: 15,
       createdAt: DateTime.now(),

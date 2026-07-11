@@ -1,0 +1,170 @@
+Launching lib/main.dart on sdk gphone64 x86 64 in debug mode...
+Running Gradle task 'assembleDebug'...                             58.7s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...          10.6s
+D/FlutterJNI(10877): Beginning load of flutter...
+D/FlutterJNI(10877): flutter (null) was loaded normally!
+I/flutter (10877): [IMPORTANT:flutter/shell/platform/android/android_context_gl_impeller.cc(104)] Using the Impeller rendering backend (OpenGLES).
+Syncing files to device sdk gphone64 x86 64...                  
+W/jumministry.jum(10877): Accessing hidden method Landroid/view/accessibility/AccessibilityNodeInfo;->getSourceNodeId()J (unsupported,test-api, reflection, allowed)
+W/jumministry.jum(10877): Accessing hidden method Landroid/view/accessibility/AccessibilityRecord;->getSourceNodeId()J (unsupported, reflection, allowed)
+W/jumministry.jum(10877): Accessing hidden field Landroid/view/accessibility/AccessibilityNodeInfo;->mChildNodeIds:Landroid/util/LongArray; (unsupported, reflection, allowed)
+W/jumministry.jum(10877): Accessing hidden method Landroid/util/LongArray;->get(I)J (unsupported, reflection, allowed)
+W/HWUI    (10877): Unknown dataspace 0
+I/jumministry.jum(10877): Background concurrent mark compact GC freed 2421KB AllocSpace bytes, 7(204KB) LOS objects, 49% free, 4152KB/8304KB, paused 1.603ms,23.306ms total 176.487ms
+Syncing files to device sdk gphone64 x86 64...                     853ms
+
+Flutter run key commands.
+r Hot reload. 🔥🔥🔥
+R Hot restart.
+h List all available interactive commands.
+d Detach (terminate "flutter run" but leave application running).
+c Clear the screen
+q Quit (terminate the application on the device).
+
+A Dart VM Service on sdk gphone64 x86 64 is available at: http://127.0.0.1:55039/Kx9hmcNBoJg=/
+The Flutter DevTools debugger and profiler on sdk gphone64 x86 64 is available at: http://127.0.0.1:55039/Kx9hmcNBoJg=/devtools/?uri=ws://127.0.0.1:55039/Kx9hmcNBoJg=/ws
+D/ProfileInstaller(10877): Installing profile for com.jumministry.jum
+I/Choreographer(10877): Skipped 108 frames!  The application may be doing too much work on its main thread.
+I/WindowExtensionsImpl(10877): Initializing Window Extensions, vendor API level=6, activity embedding enabled=true
+I/jumministry.jum(10877): Compiler allocated 5174KB to compile void android.view.ViewRootImpl.performTraversals()
+W/HWUI    (10877): Failed to choose config with EGL_SWAP_BEHAVIOR_PRESERVED, retrying without...
+W/HWUI    (10877): Failed to initialize 101010-2 format, error = EGL_SUCCESS
+I/jumministry.jum(10877): Compiler allocated 5417KB to compile void android.view.ViewRootImpl.performTraversals()
+I/Gralloc4(10877): mapper 4.x is not supported
+D/TrafficStats(10877): tagSocket(132) with statsTag=0x2710, statsUid=-1
+I/System.out(10877): flutterEngine warmed up
+I/Choreographer(10877): Skipped 132 frames!  The application may be doing too much work on its main thread.
+I/flutter (10877): supabase.supabase_flutter: INFO: ***** Supabase init completed ***** 
+I/Choreographer(10877): Skipped 40 frames!  The application may be doing too much work on its main thread.
+D/TrafficStats(10877): tagSocket(132) with statsTag=0x2710, statsUid=-1
+I/Choreographer(10877): Skipped 226 frames!  The application may be doing too much work on its main thread.
+D/EGL_emulation(10877): app_time_stats: avg=1470.41ms min=1130.43ms max=1810.39ms count=2
+I/Choreographer(10877): Skipped 176 frames!  The application may be doing too much work on its main thread.
+E/SurfaceSyncGroup(10877): Failed to receive transaction ready in 1000ms. Marking SurfaceSyncGroup(wmsSync-VRI[MainActivity]#1) as ready
+E/SurfaceSyncGroup(10877): Failed to receive transaction ready in 1000ms. Marking SurfaceSyncGroup(VRI[MainActivity]#2) as ready
+D/EGL_emulation(10877): app_time_stats: avg=2447.99ms min=2447.99ms max=2447.99ms count=1
+W/WindowOnBackDispatcher(10877): OnBackInvokedCallback is not enabled for the application.
+W/WindowOnBackDispatcher(10877): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
+I/HWUI    (10877): Davey! duration=5841ms; Flags=1, FrameTimelineVsyncId=133474, IntendedVsync=3842889983284, Vsync=3845823316500, InputEventId=0, HandleInputStart=3845835181544, AnimationStart=3845835183308, PerformTraversalsStart=3845835184707, DrawStart=3846853530082, FrameDeadline=3842906649950, FrameInterval=3845834386736, FrameStartTime=16666666, SyncQueued=3846968438036, SyncStart=3847070689908, IssueDrawCommandsStart=3847152147928, SwapBuffers=3848549719509, FrameCompleted=3848833858663, DequeueBufferDuration=272170029, QueueBufferDuration=5578620, GpuCompleted=3848833858663, SwapBuffersCompleted=3848832396137, DisplayPresentTime=72904454231359566, CommandSubmissionCompleted=3848549719509, 
+I/WM-WorkerWrapper(10877): Worker result SUCCESS for Work [ id=ab5e5442-7d18-470c-8f95-2e0acc9b7170, tags={ com.onesignal.notifications.internal.restoration.impl.NotificationRestoreWorkManager$NotificationRestoreWorker } ]
+D/EGL_emulation(10877): app_time_stats: avg=2279.70ms min=2279.70ms max=2279.70ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1315.07ms min=1315.07ms max=1315.07ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1788.19ms min=1788.19ms max=1788.19ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1009.63ms min=1009.63ms max=1009.63ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1229.64ms min=1229.64ms max=1229.64ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1272.99ms min=1272.99ms max=1272.99ms count=1
+D/TrafficStats(10877): tagSocket(153) with statsTag=0x2710, statsUid=-1
+D/EGL_emulation(10877): app_time_stats: avg=1091.92ms min=1091.92ms max=1091.92ms count=1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/EGL_emulation(10877): app_time_stats: avg=1313.48ms min=1313.48ms max=1313.48ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1084.44ms min=1084.44ms max=1084.44ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1098.28ms min=473.53ms max=1723.03ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=983.22ms min=982.78ms max=983.65ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=997.98ms min=495.16ms max=1500.80ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=985.48ms min=975.17ms max=995.79ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1158.13ms min=1158.13ms max=1158.13ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1053.62ms min=430.40ms max=1676.84ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1063.55ms min=1063.55ms max=1063.55ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1465.79ms min=1465.79ms max=1465.79ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1058.00ms min=1058.00ms max=1058.00ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1142.96ms min=1142.96ms max=1142.96ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=795.02ms min=592.83ms max=997.22ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1097.62ms min=1097.62ms max=1097.62ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1048.91ms min=1048.91ms max=1048.91ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1378.26ms min=1378.26ms max=1378.26ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1601.87ms min=1601.87ms max=1601.87ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1184.63ms min=1184.63ms max=1184.63ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1058.64ms min=1058.64ms max=1058.64ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=967.22ms min=484.71ms max=1449.73ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=826.15ms min=587.84ms max=1064.46ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1234.93ms min=995.37ms max=1474.49ms count=2
+I/flutter (10877): [EVENTS_REPO] Auto-seed check failed: ClientException with SocketException: Failed host lookup: 'vxuiokugixdrmgpmppbh.supabase.co' (OS Error: No address associated with hostname, errno = 7), uri=https://vxuiokugixdrmgpmppbh.supabase.co/rest/v1/events?select=id&limit=1
+D/TrafficStats(10877): tagSocket(164) with statsTag=0x2710, statsUid=-1
+D/EGL_emulation(10877): app_time_stats: avg=798.89ms min=637.67ms max=960.12ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1639.80ms min=1639.80ms max=1639.80ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=858.49ms min=499.52ms max=1217.45ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=2209.91ms min=2209.91ms max=2209.91ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1290.04ms min=1290.04ms max=1290.04ms count=1
+I/flutter (10877): [SERMON_REPO] Auto-seed check failed or skipped: ClientException with SocketException: Failed host lookup: 'vxuiokugixdrmgpmppbh.supabase.co' (OS Error: No address associated with hostname, errno = 7), uri=https://vxuiokugixdrmgpmppbh.supabase.co/rest/v1/sermons?select=id&limit=1
+D/EGL_emulation(10877): app_time_stats: avg=1037.75ms min=440.96ms max=1634.54ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=732.47ms min=501.97ms max=962.96ms count=2
+D/TrafficStats(10877): tagSocket(132) with statsTag=0x2710, statsUid=-1
+D/EGL_emulation(10877): app_time_stats: avg=1513.93ms min=1513.93ms max=1513.93ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1244.17ms min=1244.17ms max=1244.17ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1012.76ms min=399.26ms max=1626.26ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1115.25ms min=1115.25ms max=1115.25ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1088.10ms min=1088.10ms max=1088.10ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1023.14ms min=1023.14ms max=1023.14ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1023.02ms min=1023.02ms max=1023.02ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1049.30ms min=1049.30ms max=1049.30ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=935.87ms min=894.28ms max=977.45ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1030.02ms min=498.26ms max=1561.79ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=999.95ms min=999.95ms max=999.95ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1395.31ms min=1395.31ms max=1395.31ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=716.44ms min=560.45ms max=872.43ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1007.33ms min=1007.33ms max=1007.33ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1658.26ms min=1658.26ms max=1658.26ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1343.64ms min=1343.64ms max=1343.64ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1117.77ms min=426.51ms max=1809.04ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=950.76ms min=452.53ms max=1448.98ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1250.13ms min=1250.13ms max=1250.13ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1180.90ms min=802.04ms max=1559.76ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1219.82ms min=1219.82ms max=1219.82ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=715.32ms min=604.67ms max=825.96ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1536.41ms min=1536.41ms max=1536.41ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1052.70ms min=1052.70ms max=1052.70ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=951.64ms min=436.11ms max=1467.17ms count=2
+D/EGL_emulation(10877): app_time_stats: avg=1040.22ms min=1040.22ms max=1040.22ms count=1
+D/TrafficStats(10877): tagSocket(132) with statsTag=0x2710, statsUid=-1
+D/EGL_emulation(10877): app_time_stats: avg=1090.76ms min=1090.76ms max=1090.76ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1214.21ms min=1214.21ms max=1214.21ms count=1
+D/EGL_emulation(10877): app_time_stats: avg=1014.65ms min=1014.65ms max=1014.65ms count=1
+I/flutter (10877): [SERMON_REPO] Failed to fetch latest sermon: ClientException with SocketException: Failed host lookup: 'vxuiokugixdrmgpmppbh.supabase.co' (OS Error: No address associated with hostname, errno = 7), uri=https://vxuiokugixdrmgpmppbh.supabase.co/rest/v1/sermons?select=%2A&order=published_at.desc.nullslast&limit=1
+I/flutter (10877): YoutubeExplode.Retry: WARNING: Retrying after exception: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+D/TrafficStats(10877): tagSocket(162) with statsTag=0x2710, statsUid=-1
+I/flutter (10877): YoutubeExplode.Retry: WARNING: Retrying after exception: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+I/flutter (10877): YoutubeExplode.Retry: WARNING: Retrying after exception: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+I/flutter (10877): YoutubeExplode.Retry: WARNING: Retrying after exception: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+I/flutter (10877): YoutubeExplode.Retry: WARNING: Retrying after exception: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+I/flutter (10877): Failed to sync YouTube videos, using cache: ClientException with SocketException: Failed host lookup: 'www.youtube.com' (OS Error: No address associated with hostname, errno = 7), uri=https://www.youtube.com/channel/UCWBgDZHCDAExvnULHkhtc-A?hl=en
+D/TrafficStats(10877): tagSocket(162) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(162) with statsTag=0x2710, statsUid=-1
+I/flutter (10877): Failed to fetch from Supabase cache: ClientException with SocketException: Failed host lookup: 'vxuiokugixdrmgpmppbh.supabase.co' (OS Error: No address associated with hostname, errno = 7), uri=https://vxuiokugixdrmgpmppbh.supabase.co/rest/v1/youtube_videos?select=%2A&order=published_at.desc.nullslast&limit=50
+D/EGL_emulation(10877): app_time_stats: avg=43679.78ms min=992.41ms max=86367.14ms count=2
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(162) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+I/jumministry.jum(10877): Background concurrent mark compact GC freed 4664KB AllocSpace bytes, 0(0B) LOS objects, 49% free, 4713KB/9426KB, paused 602us,3.057ms total 1.445s
+W/jumministry.jum(10877): Reducing the number of considered missed Gc histogram windows from 124 to 100
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+D/TrafficStats(10877): tagSocket(164) with statsTag=0x2710, statsUid=-1
+F/crash_dump64(12707): crash_dump.cpp:627] failed to attach to thread 174: Permission denied
+F/crash_dump64(12808): crash_dump.cpp:627] failed to attach to thread 184: Permission denied
+D/TrafficStats(10877): tagSocket(155) with statsTag=0x2710, statsUid=-1
+Lost connection to device.

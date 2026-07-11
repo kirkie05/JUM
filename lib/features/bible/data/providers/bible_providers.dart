@@ -18,8 +18,8 @@ final bibleBooksProvider = FutureProvider<List<BibleBook>>((ref) async {
 });
 
 // Holds currently selected state
-final currentBookProvider = StateProvider<String>((ref) => 'PSA');
-final currentChapterNumberProvider = StateProvider<int>((ref) => 23);
+final currentBookProvider = StateProvider<String>((ref) => 'GEN');
+final currentChapterNumberProvider = StateProvider<int>((ref) => 1);
 
 final bibleChapterProvider = FutureProvider<BibleChapter>((ref) async {
   final repo = ref.watch(bibleRepositoryProvider);

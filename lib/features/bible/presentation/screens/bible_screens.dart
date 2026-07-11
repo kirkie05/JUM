@@ -425,8 +425,8 @@ class _BibleDashboardSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final planStateAsync = ref.watch(readingPlanStateProvider);
-    final notesAsync = ref.watch(bibleNotesProvider('$activeBookId-$activeCh'));
-    final bookmarksAsync = ref.watch(bibleBookmarksProvider('$activeBookId-$activeCh'));
+    final notesAsync = ref.watch(bibleNotesProvider('${activeBookId}_$activeCh'));
+    final bookmarksAsync = ref.watch(bibleBookmarksProvider('${activeBookId}_$activeCh'));
 
     final currentBook = books.firstWhere((b) => b.id == activeBookId, orElse: () => books.first);
 
