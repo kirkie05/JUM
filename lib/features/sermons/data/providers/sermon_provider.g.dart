@@ -23,7 +23,7 @@ final sermonsProvider = AutoDisposeFutureProvider<List<SermonModel>>.internal(
 @Deprecated('Will be removed in 3.0. Use Ref instead')
 // ignore: unused_element
 typedef SermonsRef = AutoDisposeFutureProviderRef<List<SermonModel>>;
-String _$latestSermonHash() => r'4a0764970dc4880b9324a00e81daae0092aa7aff';
+String _$latestSermonHash() => r'4accdd6e54dde89bf0008da5e66b0114d7f2bba0';
 
 /// See also [LatestSermon].
 @ProviderFor(LatestSermon)

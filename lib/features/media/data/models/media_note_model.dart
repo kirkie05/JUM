@@ -5,6 +5,7 @@ class MediaNoteModel {
   final int timestampSeconds;
   final String text;
   final DateTime createdAt;
+  final DateTime updatedAt;
 
   MediaNoteModel({
     required this.id,
@@ -13,18 +14,24 @@ class MediaNoteModel {
     required this.timestampSeconds,
     required this.text,
     required this.createdAt,
+    required this.updatedAt,
   });
 
   factory MediaNoteModel.fromJson(Map<String, dynamic> json) {
+    final createdStr = json['created_at'] as String? ?? json['createdAt'] as String?;
+    final updatedStr = json['updated_at'] as String? ?? json['updatedAt'] as String?;
+    
+    final created = createdStr != null ? DateTime.parse(createdStr) : DateTime.now();
+    final updated = updatedStr != null ? DateTime.parse(updatedStr) : created;
+
     return MediaNoteModel(
       id: json['id'] as String? ?? '',
       userId: json['user_id'] as String? ?? json['userId'] as String? ?? '',
       videoId: json['video_id'] as String? ?? json['videoId'] as String? ?? '',
       timestampSeconds: json['timestamp_seconds'] as int? ?? json['timestampSeconds'] as int? ?? 0,
       text: json['text'] as String? ?? '',
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at'] as String) 
-          : (json['createdAt'] != null ? DateTime.parse(json['createdAt'] as String) : DateTime.now()),
+      createdAt: created,
+      updatedAt: updated,
     );
   }
 
@@ -36,6 +43,7 @@ class MediaNoteModel {
       'timestamp_seconds': timestampSeconds,
       'text': text,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt.toIso8601String(),
     };
   }
 
@@ -46,6 +54,7 @@ class MediaNoteModel {
     int? timestampSeconds,
     String? text,
     DateTime? createdAt,
+    DateTime? updatedAt,
   }) {
     return MediaNoteModel(
       id: id ?? this.id,
@@ -54,6 +63,7 @@ class MediaNoteModel {
       timestampSeconds: timestampSeconds ?? this.timestampSeconds,
       text: text ?? this.text,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

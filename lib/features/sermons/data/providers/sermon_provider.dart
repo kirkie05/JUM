@@ -48,7 +48,7 @@ class LatestSermon extends _$LatestSermon {
 
     try {
       final mediaRepo = ref.read(mediaRepositoryProvider);
-      final mediaItems = await mediaRepo.fetchMedia();
+      final mediaItems = await mediaRepo.fetchMedia(limit: 50, offset: 0);
       if (mediaItems.isNotEmpty) {
         final latestMedia = mediaItems.first;
         if (latest == null || (latestMedia.publishedAt != null && latestMedia.publishedAt!.isAfter(latest.publishedAt))) {
@@ -111,8 +111,8 @@ class LatestSermon extends _$LatestSermon {
 final sermonDetailProvider = FutureProvider.family<SermonModel?, String>((ref, id) async {
   if (id.startsWith('youtube-')) {
     final ytId = id.replaceFirst('youtube-', '');
-    final ytService = ref.watch(youtubeServiceProvider);
-    final video = await ytService.fetchVideoDetails(ytId);
+    final mediaRepo = ref.watch(mediaRepositoryProvider);
+    final video = await mediaRepo.fetchVideoDetails(id);
     if (video != null) {
       return SermonModel(
         id: id,

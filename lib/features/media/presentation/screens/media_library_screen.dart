@@ -3,16 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../shared/widgets/jum_empty_state.dart';
 import '../../../../shared/widgets/jum_error_state.dart';
-import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/media_item.dart';
 import '../../data/providers/media_provider.dart';
-
-import 'media_player_screen.dart';
 
 class MediaLibraryScreen extends ConsumerStatefulWidget {
   const MediaLibraryScreen({super.key});
@@ -22,146 +20,191 @@ class MediaLibraryScreen extends ConsumerStatefulWidget {
 }
 
 class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      ref.read(mediaListProvider.notifier).loadMore();
+    }
+  }
+
   Future<void> _refresh() async {
-    ref.invalidate(mediaFeedProvider);
+    ref.invalidate(continueWatchingProvider);
+    await ref.read(mediaListProvider.notifier).refresh();
   }
 
   @override
   Widget build(BuildContext context) {
-    final feedAsync = ref.watch(mediaFeedProvider);
+    final mediaListAsync = ref.watch(mediaListProvider);
+    final continueWatchingAsync = ref.watch(continueWatchingProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF9FAFB), // Standard background
       appBar: AppBar(
-        backgroundColor: AppColors.background,
+        backgroundColor: Colors.white,
         elevation: 0,
+        centerTitle: false,
         title: const Text(
           'Media Library',
           style: TextStyle(
             fontFamily: 'Inter',
             fontSize: 20,
             fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+            color: Colors.black,
+            letterSpacing: -0.5,
           ),
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh media',
+            tooltip: 'Refresh media library',
             icon: const Icon(
               Icons.refresh_rounded,
-              color: AppColors.textPrimary,
+              color: Colors.black,
             ),
             onPressed: _refresh,
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1.0),
+          child: Container(
+            color: const Color(0xFFF3F4F6),
+            height: 1.0,
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _refresh,
         color: AppColors.primary,
-        child: feedAsync.when(
-          data: (videos) {
-            if (videos.isEmpty) {
+        child: mediaListAsync.when(
+          data: (state) {
+            final videos = state.items;
+
+            if (videos.isEmpty && !state.isLoading) {
               return ListView(
                 padding: const EdgeInsets.all(24),
-                children: const [
+                children: [
+                  const Gap(80),
                   JumEmptyState(
-                    title: 'No Media Available',
-                    subtitle: 'We could not find any videos at this time. Please check back later.',
+                    title: 'No Sermons Available',
+                    subtitle: 'We couldn\'t find any videos at this time. Please check your internet connection or try again later.',
                     icon: Icons.video_library_outlined,
+                    actionLabel: 'Retry Sync',
+                    onAction: _refresh,
                   ),
                 ],
               );
             }
 
-            final latestVideo = videos.isNotEmpty ? videos.first : null;
-            final recentVideos = videos.length > 1 ? videos.skip(1).take(4).toList() : <MediaItem>[];
-            final olderVideos = videos.length > 5 ? videos.skip(5).toList() : <MediaItem>[];
-
             return CustomScrollView(
+              controller: _scrollController,
               slivers: [
-                if (latestVideo != null) ...[
-                  const SliverToBoxAdapter(child: Gap(16)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Latest Sermon',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                // 1. Continue Watching Section (if active sessions exist)
+                continueWatchingAsync.when(
+                  data: (inProgressList) {
+                    if (inProgressList.isEmpty) {
+                      return const SliverToBoxAdapter(child: SizedBox.shrink());
+                    }
+                    return SliverToBoxAdapter(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Gap(24),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24),
+                            child: Text(
+                              'Continue Watching',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
                             ),
-                      ),
-                    ),
-                  ),
-                  const SliverToBoxAdapter(child: Gap(12)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: _FeaturedVideoCard(video: latestVideo),
-                    ),
-                  ),
-                ],
-                if (recentVideos.isNotEmpty) ...[
-                  const SliverToBoxAdapter(child: Gap(32)),
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Recent Uploads',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
+                          ),
+                          const Gap(12),
+                          SizedBox(
+                            height: 154,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              padding: const EdgeInsets.symmetric(horizontal: 24),
+                              itemCount: inProgressList.length,
+                              itemBuilder: (context, index) {
+                                final progressItem = inProgressList[index];
+                                return _buildContinueWatchingCard(context, progressItem);
+                              },
                             ),
+                          ),
+                          const Gap(8),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 24),
+                            child: Divider(color: Color(0xFFE5E7EB)),
+                          ),
+                        ],
                       ),
+                    );
+                  },
+                  loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                  error: (_, __) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                ),
+
+                // 2. Main Chronological Sermon Feed
+                const SliverToBoxAdapter(child: Gap(24)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'All Teachings',
+                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                            fontFamily: 'Inter',
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
                     ),
                   ),
-                  const SliverToBoxAdapter(child: Gap(12)),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _VideoListCard(video: recentVideos[index]),
-                          );
-                        },
-                        childCount: recentVideos.length,
-                      ),
+                ),
+                const SliverToBoxAdapter(child: Gap(12)),
+
+                SliverPadding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  sliver: SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (context, index) {
+                        final video = videos[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 16),
+                          child: _VideoListCard(video: video),
+                        );
+                      },
+                      childCount: videos.length,
                     ),
                   ),
-                ],
-                if (olderVideos.isNotEmpty) ...[
-                  const SliverToBoxAdapter(child: Gap(16)),
-                  SliverToBoxAdapter(
+                ),
+
+                // 3. Loading Indicator for Infinite Scroll
+                if (state.isLoading)
+                  const SliverToBoxAdapter(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        'Older Videos',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.textPrimary,
-                            ),
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: CircularProgressIndicator(color: AppColors.primary),
                       ),
                     ),
                   ),
-                  const SliverToBoxAdapter(child: Gap(12)),
-                  SliverPadding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    sliver: SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (context, index) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 16),
-                            child: _VideoListCard(video: olderVideos[index]),
-                          );
-                        },
-                        childCount: olderVideos.length,
-                      ),
-                    ),
-                  ),
-                ],
-                const SliverToBoxAdapter(child: Gap(32)),
+
+                const SliverToBoxAdapter(child: Gap(40)),
               ],
             );
           },
@@ -169,8 +212,9 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
           error: (err, stack) => ListView(
             padding: const EdgeInsets.all(24),
             children: [
+              const Gap(80),
               JumErrorState(
-                message: err.toString(),
+                message: 'Unable to load teachings. ${err.toString()}',
                 onRetry: _refresh,
               ),
             ],
@@ -179,160 +223,97 @@ class _MediaLibraryScreenState extends ConsumerState<MediaLibraryScreen> {
       ),
     );
   }
-}
 
-class _FeaturedVideoCard extends StatelessWidget {
-  const _FeaturedVideoCard({required this.video});
-
-  final MediaItem video;
-
-  @override
-  Widget build(BuildContext context) {
-    final dateFormat = DateFormat('MMM d, yyyy');
-    final dateStr = video.publishedAt != null ? dateFormat.format(video.publishedAt!) : '';
+  Widget _buildContinueWatchingCard(BuildContext context, ContinueWatchingItem progress) {
+    final video = progress.item;
+    final percent = progress.completionPercentage;
     
-    // Parse duration
-    String durationStr = '';
-    if (video.duration != null) {
-      final seconds = int.tryParse(video.duration!) ?? 0;
-      if (seconds > 0) {
-        final d = Duration(seconds: seconds);
-        durationStr = '${d.inHours > 0 ? '${d.inHours}:' : ''}${d.inMinutes.remainder(60).toString().padLeft(2, '0')}:${d.inSeconds.remainder(60).toString().padLeft(2, '0')}';
-      }
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Thumbnail
-          Stack(
-            children: [
-              AspectRatio(
-                aspectRatio: 16 / 9,
-                child: video.thumbnailUrl != null
-                    ? CachedNetworkImage(
-                        imageUrl: video.thumbnailUrl!,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => JumShimmer.card(),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.grey[200],
-                          child: const Icon(Icons.video_library, color: Colors.grey),
+    return GestureDetector(
+      onTap: () {
+        context.push('/media/player', extra: video);
+      },
+      child: Container(
+        width: 220,
+        margin: const EdgeInsets.only(right: 16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Expanded(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: video.thumbnailUrl ?? '',
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(color: Colors.grey[200]),
+                    errorWidget: (_, __, ___) => Container(color: Colors.grey[200], child: const Icon(Icons.video_library)),
+                  ),
+                  Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Column(
+                      children: [
+                        // Progress bar indicator
+                        LinearProgressIndicator(
+                          value: percent,
+                          backgroundColor: Colors.black26,
+                          valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                          minHeight: 4,
                         ),
-                      )
-                    : Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.video_library, color: Colors.grey),
-                      ),
-              ),
-              if (durationStr.isNotEmpty)
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      durationStr,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                      ],
                     ),
                   ),
-                ),
-            ],
-          ),
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (dateStr.isNotEmpty) ...[
+                  Center(
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.5),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 24),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(10.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    dateStr,
+                    video.title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: AppColors.textSecondary,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
+                      fontFamily: 'Inter',
+                      fontSize: 12.0,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                      height: 1.2,
                     ),
                   ),
                   const Gap(4),
-                ],
-                Text(
-                  video.title,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                if (video.description != null && video.description!.isNotEmpty) ...[
-                  const Gap(8),
                   Text(
-                    video.description!,
+                    '${(percent * 100).toInt()}% completed',
                     style: const TextStyle(
-                      fontSize: 14,
-                      color: AppColors.textSecondary,
+                      fontFamily: 'Inter',
+                      fontSize: 10,
+                      color: Colors.grey,
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
-                const Gap(16),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => MediaPlayerScreen(item: video),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.play_arrow_rounded, color: Colors.white),
-                    label: const Text(
-                      'Watch Now',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.black, // Standardization
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -348,75 +329,80 @@ class _VideoListCard extends StatelessWidget {
     final dateFormat = DateFormat('MMM d, yyyy');
     final dateStr = video.publishedAt != null ? dateFormat.format(video.publishedAt!) : '';
     
-    // Parse duration
-    String durationStr = '';
-    if (video.duration != null) {
-      final seconds = int.tryParse(video.duration!) ?? 0;
-      if (seconds > 0) {
-        final d = Duration(seconds: seconds);
-        durationStr = '${d.inHours > 0 ? '${d.inHours}:' : ''}${d.inMinutes.remainder(60).toString().padLeft(2, '0')}:${d.inSeconds.remainder(60).toString().padLeft(2, '0')}';
-      }
-    }
-
     return InkWell(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => MediaPlayerScreen(item: video),
-          ),
-        );
+        context.push('/media/player', extra: video);
       },
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.withOpacity(0.1)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: const Color(0xFFE5E7EB)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
+        clipBehavior: Clip.antiAlias,
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Thumbnail
             SizedBox(
               width: 140,
-              height: 100,
+              height: 105,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
-                  ClipRRect(
-                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(12)),
-                    child: video.thumbnailUrl != null
-                        ? CachedNetworkImage(
-                            imageUrl: video.thumbnailUrl!,
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => JumShimmer.card(),
-                            errorWidget: (context, url, error) => Container(
-                              color: Colors.grey[200],
-                              child: const Icon(Icons.video_library, color: Colors.grey),
-                            ),
-                          )
-                        : Container(
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.video_library, color: Colors.grey),
-                          ),
+                  CachedNetworkImage(
+                    imageUrl: video.thumbnailUrl ?? '',
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(color: Colors.grey[200]),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.video_library, color: Colors.grey),
+                    ),
                   ),
-                  if (durationStr.isNotEmpty)
+                  if (video.duration != null && video.duration!.isNotEmpty)
                     Positioned(
-                      bottom: 4,
-                      right: 4,
+                      bottom: 8,
+                      right: 8,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.black.withOpacity(0.8),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
-                          durationStr,
+                          video.duration!,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (video.isLive)
+                    Positioned(
+                      top: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: AppColors.error,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'LIVE',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
@@ -434,9 +420,10 @@ class _VideoListCard extends StatelessWidget {
                     Text(
                       video.title,
                       style: const TextStyle(
+                        fontFamily: 'Inter',
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.textPrimary,
+                        color: Colors.black,
                         height: 1.2,
                       ),
                       maxLines: 2,
@@ -447,19 +434,21 @@ class _VideoListCard extends StatelessWidget {
                       Text(
                         video.description!,
                         style: const TextStyle(
+                          fontFamily: 'Inter',
                           fontSize: 12,
-                          color: AppColors.textSecondary,
+                          color: Color(0xFF6B7280),
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const Gap(4),
+                      const Gap(6),
                     ],
                     if (dateStr.isNotEmpty)
                       Text(
                         dateStr,
                         style: const TextStyle(
-                          color: AppColors.textSecondary,
+                          fontFamily: 'Inter',
+                          color: Colors.grey,
                           fontSize: 11,
                         ),
                       ),
@@ -480,19 +469,15 @@ class _MediaLibrarySkeleton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(24),
       children: [
         JumShimmer(child: Container(height: 24, width: 140, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)))),
-        const Gap(12),
-        JumShimmer(child: Container(height: 200, width: double.infinity, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
-        const Gap(32),
-        JumShimmer(child: Container(height: 20, width: 120, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4)))),
-        const Gap(12),
+        const Gap(16),
         ...List.generate(4, (index) => Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Row(
             children: [
-              JumShimmer(child: Container(height: 100, width: 140, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)))),
+              JumShimmer(child: Container(height: 105, width: 140, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)))),
               const Gap(12),
               Expanded(
                 child: Column(

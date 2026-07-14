@@ -6,7 +6,7 @@ part of 'media_notes_provider.dart';
 // RiverpodGenerator
 // **************************************************************************
 
-String _$mediaNotesHash() => r'c7eb9c950201d37858f18edc30c577df9fd73a1f';
+String _$mediaNotesHash() => r'3c4935536ad4146228331241a25261aa65f58988';
 
 /// Copied from Dart SDK
 class _SystemHash {

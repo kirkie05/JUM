@@ -77,10 +77,10 @@ class HomeScreen extends ConsumerWidget {
 
               // Featured Sermon Card
               ref
-                  .watch(latestSermonProvider)
+                  .watch(latestMediaVideoProvider)
                   .when(
-                    data: (sermon) {
-                      if (sermon == null) {
+                    data: (mediaItem) {
+                      if (mediaItem == null) {
                         return Padding(
                           padding: const EdgeInsets.symmetric(vertical: 8.0),
                           child: JumEmptyState(
@@ -88,12 +88,12 @@ class HomeScreen extends ConsumerWidget {
                             subtitle: 'Please check back later for new messages!',
                             icon: Icons.video_library_outlined,
                             actionLabel: 'Retry',
-                            onAction: () => ref.invalidate(latestSermonProvider),
+                            onAction: () => ref.invalidate(latestMediaVideoProvider),
                           ),
                         );
                       }
                       return GestureDetector(
-                        onTap: () => context.push('/sermons/${sermon.id}'),
+                        onTap: () => context.push('/media/player', extra: mediaItem),
                         child: Container(
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
@@ -119,7 +119,7 @@ class HomeScreen extends ConsumerWidget {
                                     fit: StackFit.expand,
                                     children: [
                                       Image.network(
-                                        sermon.thumbnailUrl,
+                                        mediaItem.thumbnailUrl ?? '',
                                         fit: BoxFit.cover,
                                         errorBuilder: (_, __, ___) =>
                                             Container(color: Colors.grey[200]),
@@ -150,7 +150,7 @@ class HomeScreen extends ConsumerWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      sermon.title,
+                                      mediaItem.title,
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 16.0,
@@ -160,17 +160,18 @@ class HomeScreen extends ConsumerWidget {
                                       overflow: TextOverflow.ellipsis,
                                     ),
                                     const Gap(8),
-                                    Text(
-                                      sermon.publishedAt
-                                          .toIso8601String()
-                                          .split('T')
-                                          .first,
-                                      style: const TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 12.0,
-                                        color: Colors.grey,
+                                    if (mediaItem.publishedAt != null)
+                                      Text(
+                                        mediaItem.publishedAt!
+                                            .toIso8601String()
+                                            .split('T')
+                                            .first,
+                                        style: const TextStyle(
+                                          fontFamily: 'Inter',
+                                          fontSize: 12.0,
+                                          color: Colors.grey,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -187,7 +188,7 @@ class HomeScreen extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 8.0),
                       child: JumErrorState(
                         message: 'Failed to load latest sermon.',
-                        onRetry: () => ref.invalidate(latestSermonProvider),
+                        onRetry: () => ref.invalidate(latestMediaVideoProvider),
                       ),
                     ),
                   ),

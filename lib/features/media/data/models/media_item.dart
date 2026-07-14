@@ -12,11 +12,9 @@ class MediaItem {
   final String? thumbnailUrl;
   final String? description;
   final DateTime? publishedAt;
-  final DateTime? endsAt;
-  final String? duration;
+  final String? duration; // Duration in seconds or formatted string (e.g. MM:SS)
   final int? viewCount;
   final bool isLive;
-  final int? viewerCount;
 
   const MediaItem({
     required this.id,
@@ -27,11 +25,9 @@ class MediaItem {
     this.thumbnailUrl,
     this.description,
     this.publishedAt,
-    this.endsAt,
     this.duration,
     this.viewCount,
     this.isLive = false,
-    this.viewerCount,
   });
 
   Map<String, dynamic> toJson() {
@@ -44,36 +40,30 @@ class MediaItem {
       'thumbnailUrl': thumbnailUrl,
       'description': description,
       'publishedAt': publishedAt?.toIso8601String(),
-      'endsAt': endsAt?.toIso8601String(),
       'duration': duration,
       'viewCount': viewCount,
       'isLive': isLive,
-      'viewerCount': viewerCount,
     };
   }
 
   factory MediaItem.fromJson(Map<String, dynamic> json) {
     return MediaItem(
-      id: json['id'] as String,
+      id: json['id'] as String? ?? '',
       type: MediaItemType.values.firstWhere(
         (e) => e.name == json['type'],
         orElse: () => MediaItemType.video,
       ),
-      title: json['title'] as String,
-      sourceName: json['sourceName'] as String,
-      sourceUrl: json['sourceUrl'] as String,
-      thumbnailUrl: json['thumbnailUrl'] as String?,
+      title: json['title'] as String? ?? '',
+      sourceName: json['sourceName'] as String? ?? json['source_name'] as String? ?? 'YouTube',
+      sourceUrl: json['sourceUrl'] as String? ?? json['source_url'] as String? ?? '',
+      thumbnailUrl: json['thumbnailUrl'] as String? ?? json['thumbnail_url'] as String?,
       description: json['description'] as String?,
       publishedAt: json['publishedAt'] != null
           ? DateTime.tryParse(json['publishedAt'] as String)
-          : null,
-      endsAt: json['endsAt'] != null
-          ? DateTime.tryParse(json['endsAt'] as String)
-          : null,
-      duration: json['duration'] as String?,
-      viewCount: json['viewCount'] as int?,
-      isLive: json['isLive'] as bool? ?? false,
-      viewerCount: json['viewerCount'] as int?,
+          : (json['published_at'] != null ? DateTime.tryParse(json['published_at'] as String) : null),
+      duration: json['duration']?.toString(),
+      viewCount: json['viewCount'] as int? ?? json['view_count'] as int?,
+      isLive: json['isLive'] as bool? ?? json['is_live'] as bool? ?? false,
     );
   }
 }
@@ -119,4 +109,3 @@ class MediaChannelConfig {
     mixlrUsername: 'jesus-unhindered-ministry',
   );
 }
-

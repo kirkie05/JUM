@@ -9,6 +9,7 @@ class MediaNotesRepository {
   final SupabaseClient _supabase;
   MediaNotesRepository(this._supabase);
 
+  /// Fetch user personal notes for a specific video.
   Future<List<MediaNoteModel>> fetchNotes(String videoId) async {
     final res = await _supabase
         .from('media_notes')
@@ -19,6 +20,7 @@ class MediaNotesRepository {
     return (res as List).map((row) => MediaNoteModel.fromJson(row as Map<String, dynamic>)).toList();
   }
 
+  /// Create a personal note.
   Future<MediaNoteModel> createNote({
     required String userId,
     required String videoId,
@@ -35,13 +37,22 @@ class MediaNotesRepository {
     return MediaNoteModel.fromJson(res);
   }
 
-  Future<void> updateNote(String noteId, String text) async {
-    await _supabase
+  /// Update an existing personal note.
+  Future<MediaNoteModel> updateNote(String noteId, String text) async {
+    final res = await _supabase
         .from('media_notes')
-        .update({'text': text})
-        .eq('id', noteId);
+        .update({
+          'text': text,
+          'updated_at': DateTime.now().toIso8601String(),
+        })
+        .eq('id', noteId)
+        .select()
+        .single();
+
+    return MediaNoteModel.fromJson(res);
   }
 
+  /// Delete a personal note.
   Future<void> deleteNote(String noteId) async {
     await _supabase
         .from('media_notes')
