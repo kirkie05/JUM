@@ -67,33 +67,78 @@ class YoutubeService {
       debugPrint('[YOUTUBE_SERVICE] Could not fetch channel title, using default: $e');
     }
 
-    // Get the uploads playlist of the channel
-    final uploadsList = await _yt.channels.getUploads(channelId).take(count).toList();
-
     final List<MediaItem> items = [];
-    for (final video in uploadsList) {
-      String durationStr = '';
-      if (video.duration != null) {
-        final minutes = video.duration!.inMinutes;
-        final seconds = video.duration!.inSeconds.remainder(60).toString().padLeft(2, '0');
-        durationStr = '$minutes:$seconds';
-      }
 
-      items.add(MediaItem(
-        id: 'youtube-${video.id.value}',
-        type: MediaItemType.video,
-        title: video.title,
-        sourceName: video.author.isNotEmpty ? video.author : channelTitle,
-        sourceUrl: 'https://www.youtube.com/watch?v=${video.id.value}',
-        thumbnailUrl: video.thumbnails.highResUrl.isNotEmpty
-            ? video.thumbnails.highResUrl
-            : video.thumbnails.mediumResUrl,
-        description: video.description,
-        publishedAt: video.uploadDate,
-        duration: durationStr,
-        viewCount: video.engagement.viewCount,
-        isLive: video.isLive,
-      ));
+    // Attempt standard uploads playlist fetch
+    try {
+      final uploadsList = await _yt.channels.getUploads(channelId).take(count).toList();
+      for (final video in uploadsList) {
+        String durationStr = '';
+        if (video.duration != null) {
+          final minutes = video.duration!.inMinutes;
+          final seconds = video.duration!.inSeconds.remainder(60).toString().padLeft(2, '0');
+          durationStr = '$minutes:$seconds';
+        }
+
+        items.add(MediaItem(
+          id: 'youtube-${video.id.value}',
+          type: MediaItemType.video,
+          title: video.title,
+          sourceName: video.author.isNotEmpty ? video.author : channelTitle,
+          sourceUrl: 'https://www.youtube.com/watch?v=${video.id.value}',
+          thumbnailUrl: video.thumbnails.highResUrl.isNotEmpty
+              ? video.thumbnails.highResUrl
+              : video.thumbnails.mediumResUrl,
+          description: video.description,
+          publishedAt: video.uploadDate,
+          duration: durationStr,
+          viewCount: video.engagement.viewCount,
+          isLive: video.isLive,
+        ));
+      }
+    } catch (e) {
+      debugPrint('[YOUTUBE_SERVICE] Error fetching direct uploads list: $e');
+    }
+
+    // Fallback: Use search client if the uploads list parser returns nothing
+    if (items.isEmpty) {
+      debugPrint('[YOUTUBE_SERVICE] Direct uploads empty. Falling back to handle-based search scraper...');
+      try {
+        final envUrl = dotenv.env['YOUTUBE_CHANNEL_URL'];
+        final handle = envUrl != null && envUrl.contains('@')
+            ? '@' + envUrl.split('@').last.split('/').first
+            : '@jesusunhinderedministry';
+
+        final searchList = await _yt.search.search(handle);
+        for (final video in searchList) {
+          if (video.channelId.value == channelIdStr) {
+            String durationStr = '';
+            if (video.duration != null) {
+              final minutes = video.duration!.inMinutes;
+              final seconds = video.duration!.inSeconds.remainder(60).toString().padLeft(2, '0');
+              durationStr = '$minutes:$seconds';
+            }
+
+            items.add(MediaItem(
+              id: 'youtube-${video.id.value}',
+              type: MediaItemType.video,
+              title: video.title,
+              sourceName: video.author.isNotEmpty ? video.author : channelTitle,
+              sourceUrl: 'https://www.youtube.com/watch?v=${video.id.value}',
+              thumbnailUrl: video.thumbnails.highResUrl.isNotEmpty
+                  ? video.thumbnails.highResUrl
+                  : video.thumbnails.mediumResUrl,
+              description: video.description,
+              publishedAt: video.uploadDate,
+              duration: durationStr,
+              viewCount: video.engagement.viewCount,
+              isLive: video.isLive,
+            ));
+          }
+        }
+      } catch (searchError) {
+        debugPrint('[YOUTUBE_SERVICE] Fallback search scraper failed: $searchError');
+      }
     }
 
     return items;
