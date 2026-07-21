@@ -1,16 +1,13 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:video_player/video_player.dart';
-import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:jum/features/media/data/providers/media_provider.dart';
-import 'package:jum/core/providers/current_user_provider.dart';
-import 'package:jum/core/services/media_stream_resolver.dart';
 import '../models/sermon_model.dart';
+import '../../../media/data/providers/media_provider.dart';
 import '../repositories/sermon_repository.dart';
 
 part 'sermon_provider.g.dart';
@@ -189,7 +186,6 @@ class SermonPlayerState {
 @riverpod
 class SermonPlayerNotifier extends _$SermonPlayerNotifier {
   AudioPlayer? _audioPlayer;
-  VideoPlayerController? _videoController;
   StreamSubscription? _audioPositionSub;
   StreamSubscription? _audioDurationSub;
   StreamSubscription? _audioStateSub;
@@ -202,17 +198,12 @@ class SermonPlayerNotifier extends _$SermonPlayerNotifier {
     return const SermonPlayerState();
   }
 
-  VideoPlayerController? get videoController => _videoController;
-
   void _cleanup() {
     _audioPositionSub?.cancel();
     _audioDurationSub?.cancel();
     _audioStateSub?.cancel();
     _audioPlayer?.dispose();
     _audioPlayer = null;
-
-    _videoController?.dispose();
-    _videoController = null;
   }
 
   Future<void> play(SermonModel sermon) async {
@@ -224,22 +215,9 @@ class SermonPlayerNotifier extends _$SermonPlayerNotifier {
       speed: 1.0,
     );
 
-    if (sermon.type == 'video') {
-      try {
-        final playableUrl = await MediaStreamResolver.resolveNativeStreamUrl(sermon.mediaUrl);
-        print('[STREAM_URL] Resolved URL: $playableUrl');
-        _videoController = VideoPlayerController.networkUrl(Uri.parse(playableUrl));
-        _videoController!.addListener(_videoListener);
-        await _videoController!.initialize();
-        await _videoController!.play();
-        state = state.copyWith(
-          duration: _videoController!.value.duration,
-          isPlaying: _videoController!.value.isPlaying,
-        );
-      } catch (e) {
-        state = state.copyWith(isPlaying: false);
-      }
-    } else {
+    // Note: YouTube video sermons are handled entirely by YoutubePlayerController
+    // in the UI (sermon_player_screen.dart). This notifier only manages audio sermons.
+    if (sermon.type == 'audio') {
       _audioPlayer = AudioPlayer();
       _audioPlayer!.setReleaseMode(ReleaseMode.stop);
       
@@ -260,52 +238,30 @@ class SermonPlayerNotifier extends _$SermonPlayerNotifier {
       } catch (e) {
         state = state.copyWith(isPlaying: false);
       }
+    } else {
+      // Video handled in UI via YoutubePlayerController — nothing to do here
+      state = state.copyWith(isPlaying: false);
     }
-  }
-
-  void _videoListener() {
-    if (_videoController == null) return;
-    state = state.copyWith(
-      position: _videoController!.value.position,
-      duration: _videoController!.value.duration,
-      isPlaying: _videoController!.value.isPlaying,
-    );
   }
 
   Future<void> pause() async {
-    if (state.sermon?.type == 'video') {
-      await _videoController?.pause();
-    } else {
-      await _audioPlayer?.pause();
-    }
+    await _audioPlayer?.pause();
     state = state.copyWith(isPlaying: false);
   }
 
   Future<void> resume() async {
     if (state.sermon == null) return;
-    if (state.sermon!.type == 'video') {
-      await _videoController?.play();
-    } else {
-      await _audioPlayer?.resume();
-    }
+    await _audioPlayer?.resume();
     state = state.copyWith(isPlaying: true);
   }
 
   Future<void> seek(Duration position) async {
-    if (state.sermon?.type == 'video') {
-      await _videoController?.seekTo(position);
-    } else {
-      await _audioPlayer?.seek(position);
-    }
+    await _audioPlayer?.seek(position);
     state = state.copyWith(position: position);
   }
 
   Future<void> setSpeed(double speed) async {
-    if (state.sermon?.type == 'video') {
-      await _videoController?.setPlaybackSpeed(speed);
-    } else {
-      await _audioPlayer?.setPlaybackRate(speed);
-    }
+    await _audioPlayer?.setPlaybackRate(speed);
     state = state.copyWith(speed: speed);
   }
 

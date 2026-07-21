@@ -3,6 +3,7 @@ import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/data/models/user_model.dart';
 import '../models/message_model.dart';
 import '../repositories/messaging_repository.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 part 'messaging_providers.g.dart';
 
@@ -57,14 +58,22 @@ Stream<List<MessageModel>> groupConversation(GroupConversationRef ref, String co
 }
 
 class RecentConversation {
-  final UserModel peer;
+  final String id;
+  final String title;
+  final String? avatarUrl;
   final MessageModel lastMessage;
   final int unreadCount;
+  final bool isGroup;
+  final String? peerId;
 
   RecentConversation({
-    required this.peer,
+    required this.id,
+    required this.title,
+    this.avatarUrl,
     required this.lastMessage,
     required this.unreadCount,
+    required this.isGroup,
+    this.peerId,
   });
 }
 
@@ -79,26 +88,59 @@ Stream<List<RecentConversation>> recentConversations(RecentConversationsRef ref)
 
     final map = <String, List<MessageModel>>{};
     for (var msg in messages) {
-      final peerId = msg.senderId == currentUser.id ? msg.receiverId : msg.senderId;
-      if (peerId == null) continue;
-      map.putIfAbsent(peerId, () => []).add(msg);
+      if (msg.conversationId != null) {
+        map.putIfAbsent(msg.conversationId!, () => []).add(msg);
+      }
     }
+
+    final conversationIds = map.keys.toList();
+    final List<dynamic> conversationsRes = conversationIds.isNotEmpty
+        ? await Supabase.instance.client
+            .from('conversations')
+            .select('*, groups(name)')
+            .inFilter('id', conversationIds)
+            .catchError((_) => <dynamic>[])
+        : [];
+        
+    final conversationsMap = {for (var c in conversationsRes) c['id'] as String: c};
 
     final list = <RecentConversation>[];
     for (var entry in map.entries) {
-      final peerId = entry.key;
+      final convId = entry.key;
       final peerMsgs = entry.value;
-      final peerUser = contactMap[peerId];
-      if (peerUser == null) continue;
-
       final lastMsg = peerMsgs.last;
+      
+      final convDetails = conversationsMap[convId];
+      if (convDetails == null) continue;
+
+      final isGroup = convDetails['is_group'] as bool? ?? false;
       final unreadCount = peerMsgs.where((m) => m.receiverId == currentUser.id && m.readAt == null).length;
 
-      list.add(RecentConversation(
-        peer: peerUser,
-        lastMessage: lastMsg,
-        unreadCount: unreadCount,
-      ));
+      if (isGroup) {
+        final groupName = convDetails['name'] ?? convDetails['groups']?['name'] ?? 'Group Chat';
+        list.add(RecentConversation(
+          id: convId,
+          title: groupName,
+          lastMessage: lastMsg,
+          unreadCount: unreadCount,
+          isGroup: true,
+        ));
+      } else {
+        final peerId = lastMsg.senderId == currentUser.id ? lastMsg.receiverId : lastMsg.senderId;
+        if (peerId == null) continue;
+        final peerUser = contactMap[peerId];
+        if (peerUser == null) continue;
+
+        list.add(RecentConversation(
+          id: convId,
+          title: peerUser.name,
+          avatarUrl: peerUser.avatarUrl,
+          lastMessage: lastMsg,
+          unreadCount: unreadCount,
+          isGroup: false,
+          peerId: peerId,
+        ));
+      }
     }
 
     list.sort((a, b) => b.lastMessage.createdAt.compareTo(a.lastMessage.createdAt));

@@ -79,6 +79,7 @@ dependencies:
   add_2_calendar: ^3.0.1
   just_audio: ^0.10.5
   just_audio_background: ^0.0.1-beta.17
+  file_picker: ^11.0.2
 
 dependency_overrides:
   intl: any

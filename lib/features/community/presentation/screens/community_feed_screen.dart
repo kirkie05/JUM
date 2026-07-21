@@ -1,9 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
 
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_sizes.dart';
@@ -13,7 +17,221 @@ import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../../auth/data/providers/auth_provider.dart';
 import '../../data/models/post_model.dart';
 import '../../data/repositories/community_repository.dart';
+import '../../data/providers/community_provider.dart';
 
+// -------------------------------------------------------------
+// INLINE AUDIO PLAYER
+// -------------------------------------------------------------
+class JumAudioPlayer extends StatefulWidget {
+  final String url;
+  const JumAudioPlayer({Key? key, required this.url}) : super(key: key);
+
+  @override
+  State<JumAudioPlayer> createState() => _JumAudioPlayerState();
+}
+
+class _JumAudioPlayerState extends State<JumAudioPlayer> {
+  late final AudioPlayer _audioPlayer;
+  bool _isPlaying = false;
+  Duration _duration = Duration.zero;
+  Duration _position = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _audioPlayer = AudioPlayer();
+    _audioPlayer.setSourceUrl(widget.url);
+
+    _audioPlayer.onPlayerStateChanged.listen((state) {
+      if (mounted) {
+        setState(() {
+          _isPlaying = state == PlayerState.playing;
+        });
+      }
+    });
+
+    _audioPlayer.onDurationChanged.listen((dur) {
+      if (mounted) {
+        setState(() {
+          _duration = dur;
+        });
+      }
+    });
+
+    _audioPlayer.onPositionChanged.listen((pos) {
+      if (mounted) {
+        setState(() {
+          _position = pos;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
+  }
+
+  String _formatDuration(Duration d) {
+    final minutes = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final seconds = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$minutes:$seconds';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface2,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          IconButton(
+            icon: Icon(
+              _isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_filled_rounded,
+              color: AppColors.primary,
+              size: 40,
+            ),
+            onPressed: () {
+              if (_isPlaying) {
+                _audioPlayer.pause();
+              } else {
+                _audioPlayer.resume();
+              }
+            },
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Audio Attachment',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    trackHeight: 2.0,
+                    thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.0),
+                    overlayShape: const RoundSliderOverlayShape(overlayRadius: 14.0),
+                    activeTrackColor: AppColors.primary,
+                    inactiveTrackColor: AppColors.divider,
+                    thumbColor: AppColors.primary,
+                  ),
+                  child: Slider(
+                    min: 0.0,
+                    max: _duration.inMilliseconds.toDouble() > 0 
+                        ? _duration.inMilliseconds.toDouble() 
+                        : 1.0,
+                    value: _position.inMilliseconds.toDouble().clamp(
+                          0.0,
+                          _duration.inMilliseconds.toDouble() > 0 
+                              ? _duration.inMilliseconds.toDouble() 
+                              : 1.0,
+                        ),
+                    onChanged: (val) {
+                      _audioPlayer.seek(Duration(milliseconds: val.toInt()));
+                    },
+                  ),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _formatDuration(_position),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    ),
+                    Text(
+                      _formatDuration(_duration),
+                      style: const TextStyle(fontSize: 10, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// INLINE VIDEO PLAYER
+// -------------------------------------------------------------
+class JumVideoPlayer extends StatefulWidget {
+  final String url;
+  const JumVideoPlayer({Key? key, required this.url}) : super(key: key);
+
+  @override
+  State<JumVideoPlayer> createState() => _JumVideoPlayerState();
+}
+
+class _JumVideoPlayerState extends State<JumVideoPlayer> {
+  VideoPlayerController? _videoController;
+  ChewieController? _chewieController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videoController = VideoPlayerController.networkUrl(Uri.parse(widget.url))
+      ..initialize().then((_) {
+        if (mounted) {
+          setState(() {
+            _chewieController = ChewieController(
+              videoPlayerController: _videoController!,
+              aspectRatio: _videoController!.value.aspectRatio,
+              autoPlay: false,
+              looping: false,
+              materialProgressColors: ChewieProgressColors(
+                playedColor: AppColors.primary,
+                handleColor: AppColors.primary,
+                backgroundColor: Colors.grey,
+                bufferedColor: Colors.grey.shade300,
+              ),
+            );
+          });
+        }
+      });
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _chewieController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_chewieController != null && _videoController!.value.isInitialized) {
+      return AspectRatio(
+        aspectRatio: _videoController!.value.aspectRatio,
+        child: Chewie(controller: _chewieController!),
+      );
+    }
+    return Container(
+      height: 200,
+      color: Colors.black12,
+      child: const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      ),
+    );
+  }
+}
+
+// -------------------------------------------------------------
+// COMMUNITY FEED SCREEN
+// -------------------------------------------------------------
 class CommunityFeedScreen extends ConsumerStatefulWidget {
   const CommunityFeedScreen({super.key});
 
@@ -24,6 +242,7 @@ class CommunityFeedScreen extends ConsumerStatefulWidget {
 class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
   final _bodyController = TextEditingController();
   File? _mediaFile;
+  String? _mediaType;
   bool _isPosting = false;
 
   @override
@@ -32,12 +251,75 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
+  Future<void> _pickMedia(String type) async {
     final picker = ImagePicker();
-    final image = await picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      setState(() => _mediaFile = File(image.path));
+    if (type == 'image') {
+      final image = await picker.pickImage(source: ImageSource.gallery);
+      if (image != null) {
+        setState(() {
+          _mediaFile = File(image.path);
+          _mediaType = 'image';
+        });
+      }
+    } else if (type == 'video') {
+      final video = await picker.pickVideo(source: ImageSource.gallery);
+      if (video != null) {
+        setState(() {
+          _mediaFile = File(video.path);
+          _mediaType = 'video';
+        });
+      }
+    } else if (type == 'audio') {
+      final result = await FilePicker.pickFiles(type: FileType.audio);
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _mediaFile = File(result.files.single.path!);
+          _mediaType = 'audio';
+        });
+      }
     }
+  }
+
+  void _showAttachmentOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.image_outlined, color: AppColors.primary),
+                title: const Text('Add Image', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMedia('image');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.video_collection_outlined, color: AppColors.primary),
+                title: const Text('Add Video', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMedia('video');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.audiotrack_outlined, color: AppColors.primary),
+                title: const Text('Add Sound / Audio', style: TextStyle(color: AppColors.textPrimary)),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickMedia('audio');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submitPost() async {
@@ -55,19 +337,17 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
     setState(() => _isPosting = true);
 
     try {
-      // TODO: Handle media upload to storage bucket
-      String? mediaUrl;
-
-      await ref.read(communityRepositoryProvider).createPost(
-        userId: user.id,
+      await ref.read(createPostNotifierProvider.notifier).submit(
         body: bodyText,
-        mediaUrl: mediaUrl,
+        mediaFile: _mediaFile,
+        mediaType: _mediaType,
       );
 
       if (mounted) {
         setState(() {
           _bodyController.clear();
           _mediaFile = null;
+          _mediaType = null;
         });
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -115,6 +395,53 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
     }
   }
 
+  void _confirmRepost(PostModel post) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.surface,
+          title: const Text('Repost', style: TextStyle(fontFamily: 'Outfit', color: AppColors.textPrimary)),
+          content: Text('Would you like to repost this message from ${post.authorName ?? "Member"} to the community feed?', style: const TextStyle(fontFamily: 'Inter', color: AppColors.textSecondary)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel', style: TextStyle(color: AppColors.textMuted)),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                final user = ref.read(authNotifierProvider).value;
+                if (user == null) return;
+                
+                try {
+                  await ref.read(communityRepositoryProvider).createPost(
+                    userId: user.id,
+                    body: 'Reposted',
+                    repostOfId: post.id,
+                  );
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Reposted successfully!'), backgroundColor: AppColors.success),
+                    );
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to repost: $e'), backgroundColor: Colors.redAccent),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: const Text('Repost', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMd, vertical: 12),
@@ -137,11 +464,11 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
               color: AppColors.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(Icons.people_alt_rounded, size: 14, color: AppColors.primary),
-                const SizedBox(width: 4),
-                const Text(
+                Icon(Icons.people_alt_rounded, size: 14, color: AppColors.primary),
+                SizedBox(width: 4),
+                Text(
                   'Live',
                   style: TextStyle(
                     fontFamily: 'Inter',
@@ -182,7 +509,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.attach_file_rounded, color: AppColors.textMuted, size: 22),
-                onPressed: _pickImage,
+                onPressed: () => _showAttachmentOptions(context),
               ),
               Expanded(
                 child: TextField(
@@ -206,12 +533,39 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: Image.file(_mediaFile!, height: 140, width: double.infinity, fit: BoxFit.cover),
+                  child: _mediaType == 'image'
+                      ? Image.file(_mediaFile!, height: 140, width: double.infinity, fit: BoxFit.cover)
+                      : Container(
+                          height: 80,
+                          width: double.infinity,
+                          color: AppColors.surface2,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _mediaType == 'video' ? Icons.play_circle_fill_rounded : Icons.audiotrack_rounded,
+                                color: AppColors.primary,
+                                size: 32,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _mediaFile!.path.split('/').last,
+                                  style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                 ),
                 Positioned(
                   top: 8, right: 8,
                   child: GestureDetector(
-                    onTap: () => setState(() => _mediaFile = null),
+                    onTap: () => setState(() {
+                      _mediaFile = null;
+                      _mediaType = null;
+                    }),
                     child: Container(
                       padding: const EdgeInsets.all(4),
                       decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
@@ -310,7 +664,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                   children: [
                     Text(authorName, style: const TextStyle(fontFamily: 'Inter', fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                     const SizedBox(height: 2),
-                    Text('Community Member', style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.textSecondary)),
+                    const Text('Community Member', style: TextStyle(fontFamily: 'Inter', fontSize: 12, color: AppColors.textSecondary)),
                   ],
                 ),
               ),
@@ -323,14 +677,79 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
           ),
           const SizedBox(height: AppSizes.paddingMd),
           _buildBodyText(post.body),
-          if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty) ...[
+
+          // Repost rendering
+          if (post.repostOfId != null && post.repostedPost != null) ...[
+            const SizedBox(height: AppSizes.paddingMd),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.background.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 12,
+                        backgroundColor: AppColors.primary.withOpacity(0.1),
+                        backgroundImage: post.repostedPost!.authorAvatarUrl != null
+                            ? CachedNetworkImageProvider(post.repostedPost!.authorAvatarUrl!)
+                            : null,
+                        child: post.repostedPost!.authorAvatarUrl == null
+                            ? Text(
+                                post.repostedPost!.authorName?.substring(0, 1).toUpperCase() ?? 'M',
+                                style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: AppColors.primary),
+                              )
+                            : null,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        post.repostedPost!.authorName ?? 'Member',
+                        style: const TextStyle(fontFamily: 'Inter', fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    post.repostedPost!.body,
+                    style: const TextStyle(fontFamily: 'Inter', fontSize: 13, color: AppColors.textSecondary),
+                  ),
+                  if (post.repostedPost!.mediaUrl != null && post.repostedPost!.mediaUrl!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: post.repostedPost!.mediaType == 'image'
+                          ? CachedNetworkImage(
+                              imageUrl: post.repostedPost!.mediaUrl!,
+                              fit: BoxFit.cover, height: 120, width: double.infinity,
+                            )
+                          : post.repostedPost!.mediaType == 'video'
+                              ? JumVideoPlayer(url: post.repostedPost!.mediaUrl!)
+                              : JumAudioPlayer(url: post.repostedPost!.mediaUrl!),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+
+          // Media attachments of parent post
+          if (post.mediaUrl != null && post.mediaUrl!.isNotEmpty && post.mediaType != null) ...[
             const SizedBox(height: AppSizes.paddingMd),
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: CachedNetworkImage(
-                imageUrl: post.mediaUrl!,
-                fit: BoxFit.cover, height: 220, width: double.infinity,
-              ),
+              child: post.mediaType == 'image'
+                  ? CachedNetworkImage(
+                      imageUrl: post.mediaUrl!,
+                      fit: BoxFit.cover, height: 220, width: double.infinity,
+                    )
+                  : post.mediaType == 'video'
+                      ? JumVideoPlayer(url: post.mediaUrl!)
+                      : JumAudioPlayer(url: post.mediaUrl!),
             ),
           ],
           const SizedBox(height: AppSizes.paddingMd),
@@ -356,10 +775,10 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                 onTap: () => _showCommentsBottomSheet(post),
               ),
               _buildActionItem(
-                icon: Icons.share_outlined,
+                icon: Icons.repeat_rounded,
                 color: AppColors.textMuted,
-                label: 'Share',
-                onTap: () => Share.share('Check this JUM Post: ${post.body}'),
+                label: 'Repost',
+                onTap: () => _confirmRepost(post),
               ),
             ],
           ),
@@ -516,7 +935,7 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final postsStream = ref.watch(communityRepositoryProvider).watchFeed();
+    final postsAsync = ref.watch(communityFeedProvider(groupId: null));
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -525,25 +944,8 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
           children: [
             _buildHeader(),
             Expanded(
-              child: StreamBuilder<List<PostModel>>(
-                stream: postsStream,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return JumShimmer.list();
-                  }
-                  if (snapshot.hasError) {
-                    debugPrint('[COMMUNITY_FEED] Stream error: ${snapshot.error}');
-                    return Center(
-                      child: JumErrorState(
-                        message: 'Failed to load community feed.',
-                        onRetry: () {
-                          setState(() {});
-                        },
-                      ),
-                    );
-                  }
-                  
-                  final posts = snapshot.data ?? [];
+              child: postsAsync.when(
+                data: (posts) {
                   if (posts.isEmpty) {
                     return ListView(
                       padding: const EdgeInsets.only(bottom: AppSizes.paddingXl),
@@ -569,6 +971,16 @@ class _CommunityFeedScreenState extends ConsumerState<CommunityFeedScreen> {
                         child: _buildPostCard(posts[i - 1]),
                       );
                     },
+                  );
+                },
+                loading: () => JumShimmer.list(),
+                error: (e, st) {
+                  debugPrint('[COMMUNITY_FEED] Provider error: $e');
+                  return Center(
+                    child: JumErrorState(
+                      message: 'Failed to load community feed.',
+                      onRetry: () => ref.invalidate(communityFeedProvider(groupId: null)),
+                    ),
                   );
                 },
               ),

@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart' as yte;
 import 'package:dio/dio.dart';
+import 'package:html/parser.dart' as hp;
+import 'package:html/dom.dart';
 import '../models/media_item.dart';
 
 class YoutubeService {
@@ -49,6 +51,76 @@ class YoutubeService {
     return null;
   }
 
+  List<Element> _descendants(Element element) {
+    final list = <Element>[];
+    for (final child in element.children) {
+      list.add(child);
+      list.addAll(_descendants(child));
+    }
+    return list;
+  }
+
+  Future<List<MediaItem>> fetchRssUploads(String channelIdStr, String channelTitle) async {
+    final List<MediaItem> items = [];
+    try {
+      final url = 'https://www.youtube.com/feeds/videos.xml?channel_id=$channelIdStr';
+      final response = await _dio.get<String>(
+        url,
+        options: Options(
+          receiveTimeout: const Duration(seconds: 10),
+          sendTimeout: const Duration(seconds: 10),
+        ),
+      );
+      if (response.data != null) {
+        final document = hp.parse(response.data);
+        final entries = document.getElementsByTagName('entry');
+        for (final entry in entries) {
+          String? title;
+          String? videoId;
+          DateTime? publishedAt;
+          String? thumbnailUrl;
+          String? description;
+
+          for (final child in entry.children) {
+            if (child.localName == 'title') {
+              title = child.text;
+            } else if (child.localName == 'yt:videoid') {
+              videoId = child.text;
+            } else if (child.localName == 'published') {
+              publishedAt = DateTime.tryParse(child.text);
+            }
+          }
+
+          for (final descendant in _descendants(entry)) {
+            if (descendant.localName == 'media:thumbnail') {
+              thumbnailUrl = descendant.attributes['url'];
+            } else if (descendant.localName == 'media:description') {
+              description = descendant.text;
+            }
+          }
+
+          if (videoId != null && title != null) {
+            items.add(MediaItem(
+              id: 'youtube-$videoId',
+              type: MediaItemType.video,
+              title: title,
+              sourceName: channelTitle,
+              sourceUrl: 'https://www.youtube.com/watch?v=$videoId',
+              thumbnailUrl: thumbnailUrl ?? 'https://i.ytimg.com/vi/$videoId/hqdefault.jpg',
+              description: description,
+              publishedAt: publishedAt,
+              duration: '',
+              isLive: false,
+            ));
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[YOUTUBE_SERVICE] Error fetching RSS uploads: $e');
+    }
+    return items;
+  }
+
   /// Fetch videos uploaded to the configured channel.
   Future<List<MediaItem>> fetchChannelUploads({int count = 50}) async {
     final channelIdStr = await resolveChannelId();
@@ -69,10 +141,24 @@ class YoutubeService {
 
     final List<MediaItem> items = [];
 
-    // Attempt standard uploads playlist fetch
+    // 1. Try RSS feed first to get the absolute latest videos instantly
+    try {
+      final rssItems = await fetchRssUploads(channelIdStr, channelTitle);
+      items.addAll(rssItems);
+      debugPrint('[YOUTUBE_SERVICE] Fetched ${rssItems.length} videos from RSS feed.');
+    } catch (e) {
+      debugPrint('[YOUTUBE_SERVICE] RSS fetch failed: $e');
+    }
+
+    final existingIds = items.map((e) => e.id).toSet();
+
+    // 2. Attempt standard uploads playlist fetch to get additional videos
     try {
       final uploadsList = await _yt.channels.getUploads(channelId).take(count).toList();
       for (final video in uploadsList) {
+        final videoId = 'youtube-${video.id.value}';
+        if (existingIds.contains(videoId)) continue;
+
         String durationStr = '';
         if (video.duration != null) {
           final minutes = video.duration!.inMinutes;
@@ -81,7 +167,7 @@ class YoutubeService {
         }
 
         items.add(MediaItem(
-          id: 'youtube-${video.id.value}',
+          id: videoId,
           type: MediaItemType.video,
           title: video.title,
           sourceName: video.author.isNotEmpty ? video.author : channelTitle,
@@ -95,14 +181,15 @@ class YoutubeService {
           viewCount: video.engagement.viewCount,
           isLive: video.isLive,
         ));
+        existingIds.add(videoId);
       }
     } catch (e) {
       debugPrint('[YOUTUBE_SERVICE] Error fetching direct uploads list: $e');
     }
 
-    // Fallback: Use search client if the uploads list parser returns nothing
+    // 3. Fallback: Use search client if direct uploads and RSS returned nothing
     if (items.isEmpty) {
-      debugPrint('[YOUTUBE_SERVICE] Direct uploads empty. Falling back to handle-based search scraper...');
+      debugPrint('[YOUTUBE_SERVICE] Direct uploads and RSS empty. Falling back to handle-based search scraper...');
       try {
         final envUrl = dotenv.env['YOUTUBE_CHANNEL_URL'];
         final handle = envUrl != null && envUrl.contains('@')
@@ -112,6 +199,9 @@ class YoutubeService {
         final searchList = await _yt.search.search(handle);
         for (final video in searchList) {
           if (video.channelId.value == channelIdStr) {
+            final videoId = 'youtube-${video.id.value}';
+            if (existingIds.contains(videoId)) continue;
+
             String durationStr = '';
             if (video.duration != null) {
               final minutes = video.duration!.inMinutes;
@@ -120,7 +210,7 @@ class YoutubeService {
             }
 
             items.add(MediaItem(
-              id: 'youtube-${video.id.value}',
+              id: videoId,
               type: MediaItemType.video,
               title: video.title,
               sourceName: video.author.isNotEmpty ? video.author : channelTitle,
@@ -134,6 +224,7 @@ class YoutubeService {
               viewCount: video.engagement.viewCount,
               isLive: video.isLive,
             ));
+            existingIds.add(videoId);
           }
         }
       } catch (searchError) {

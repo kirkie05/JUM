@@ -5,6 +5,7 @@ import 'package:gap/gap.dart';
 import '../../../../shared/widgets/jum_card.dart';
 import '../../../../shared/widgets/jum_shimmer.dart';
 import '../../data/models/sermon_model.dart';
+import '../../../media/data/models/media_item.dart';
 
 class SermonCard extends StatelessWidget {
   final SermonModel sermon;
@@ -29,7 +30,21 @@ class SermonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return JumCard(
-      onTap: () => context.push('/sermons/${sermon.id}'),
+      onTap: () {
+        final mediaItem = MediaItem(
+          id: sermon.id,
+          type: sermon.type == 'video' ? MediaItemType.video : MediaItemType.audio,
+          title: sermon.title,
+          sourceName: sermon.speaker,
+          sourceUrl: (sermon.type == 'video' && sermon.youtubeVideoId != null && sermon.youtubeVideoId!.isNotEmpty) ? 'https://www.youtube.com/watch?v=${sermon.youtubeVideoId}' : sermon.mediaUrl,
+          thumbnailUrl: sermon.thumbnailUrl,
+          description: sermon.description,
+          publishedAt: sermon.publishedAt,
+          duration: sermon.durationSeconds.toString(),
+          isLive: false,
+        );
+        context.push('/media/player', extra: mediaItem);
+      },
       padding: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

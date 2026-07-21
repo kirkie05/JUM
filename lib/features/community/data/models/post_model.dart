@@ -17,6 +17,9 @@ abstract class PostModel with _$PostModel {
     String? authorName,
     String? authorAvatarUrl,
     bool? isLikedByMe,
+    String? repostOfId,
+    PostModel? repostedPost,
+    String? groupId,
   }) = _PostModel;
   
   factory PostModel.fromJson(Map<String, dynamic> json) => _$PostModelFromJson(json);

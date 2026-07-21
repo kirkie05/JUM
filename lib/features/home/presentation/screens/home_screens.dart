@@ -503,7 +503,7 @@ class HomeScreen extends ConsumerWidget {
 
               const Gap(16),
 
-              ref.watch(communityFeedProvider).when(
+              ref.watch(communityFeedProvider(groupId: null)).when(
                 data: (posts) {
                   if (posts.isEmpty) {
                     return const JumEmptyState(

@@ -17,6 +17,11 @@ _PostModel _$PostModelFromJson(Map<String, dynamic> json) => _PostModel(
   authorName: json['author_name'] as String?,
   authorAvatarUrl: json['author_avatar_url'] as String?,
   isLikedByMe: json['is_liked_by_me'] as bool?,
+  repostOfId: json['repost_of_id'] as String?,
+  repostedPost: json['reposted_post'] == null
+      ? null
+      : PostModel.fromJson(json['reposted_post'] as Map<String, dynamic>),
+  groupId: json['group_id'] as String?,
 );
 
 Map<String, dynamic> _$PostModelToJson(_PostModel instance) =>
@@ -31,6 +36,9 @@ Map<String, dynamic> _$PostModelToJson(_PostModel instance) =>
       'author_name': instance.authorName,
       'author_avatar_url': instance.authorAvatarUrl,
       'is_liked_by_me': instance.isLikedByMe,
+      'repost_of_id': instance.repostOfId,
+      'reposted_post': instance.repostedPost,
+      'group_id': instance.groupId,
     };
 
 _CommentModel _$CommentModelFromJson(Map<String, dynamic> json) =>

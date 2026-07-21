@@ -95,9 +95,18 @@ class MediaList extends _$MediaList {
 
   Future<void> _syncInBackground() async {
     try {
-      await ref.read(mediaRepositoryProvider).syncYoutubeMedia();
-      // Silently refresh the list once synced
-      ref.invalidateSelf();
+      final repo = ref.read(mediaRepositoryProvider);
+      await repo.syncYoutubeMedia();
+      // Silently update the state once synced without invalidating self (avoids loops)
+      final items = await repo.fetchMedia(limit: _pageSize, offset: 0);
+      state = AsyncValue.data(MediaListState(
+        items: items,
+        isLoading: false,
+        hasMore: items.length >= _pageSize,
+        offset: items.length,
+      ));
+      // Force refresh the latest sermon card on home screen
+      ref.invalidate(latestMediaVideoProvider);
     } catch (e) {
       debugPrint('[MEDIA_PROVIDER] Background sync failed: $e');
     }
@@ -109,6 +118,7 @@ class MediaList extends _$MediaList {
       final repo = ref.read(mediaRepositoryProvider);
       try {
         await repo.syncYoutubeMedia();
+        ref.invalidate(latestMediaVideoProvider);
       } catch (e) {
         debugPrint('[MEDIA_PROVIDER] Refresh sync failed: $e');
       }
@@ -147,15 +157,8 @@ class MediaList extends _$MediaList {
 final latestMediaVideoProvider = FutureProvider<MediaItem?>((ref) async {
   final repo = ref.watch(mediaRepositoryProvider);
   
-  // Try to query newest from Supabase first
+  // Fetch the newest from Supabase directly (updates instantly via background invalidation)
   try {
-    final items = await repo.fetchMedia(limit: 1, offset: 0);
-    if (items.isNotEmpty) return items.first;
-  } catch (_) {}
-
-  // Fallback: sync directly
-  try {
-    await repo.syncYoutubeMedia();
     final items = await repo.fetchMedia(limit: 1, offset: 0);
     if (items.isNotEmpty) return items.first;
   } catch (_) {}

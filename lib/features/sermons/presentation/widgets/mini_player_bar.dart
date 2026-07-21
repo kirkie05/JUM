@@ -6,6 +6,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
 import '../../data/providers/sermon_provider.dart';
+import '../../../media/data/models/media_item.dart';
 
 class MiniPlayerBar extends ConsumerWidget {
   const MiniPlayerBar({Key? key}) : super(key: key);
@@ -25,7 +26,21 @@ class MiniPlayerBar extends ConsumerWidget {
         : 0.0;
 
     return InkWell(
-      onTap: () => context.push('/sermons/${sermon.id}'),
+      onTap: () {
+        final mediaItem = MediaItem(
+          id: sermon.id,
+          type: sermon.type == 'video' ? MediaItemType.video : MediaItemType.audio,
+          title: sermon.title,
+          sourceName: sermon.speaker,
+          sourceUrl: (sermon.type == 'video' && sermon.youtubeVideoId != null && sermon.youtubeVideoId!.isNotEmpty) ? 'https://www.youtube.com/watch?v=${sermon.youtubeVideoId}' : sermon.mediaUrl,
+          thumbnailUrl: sermon.thumbnailUrl,
+          description: sermon.description,
+          publishedAt: sermon.publishedAt,
+          duration: sermon.durationSeconds.toString(),
+          isLive: false,
+        );
+        context.push('/media/player', extra: mediaItem);
+      },
       child: Container(
         height: 64,
         decoration: const BoxDecoration(

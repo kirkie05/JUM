@@ -164,7 +164,10 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/community/create-post',
-      builder: (context, state) => const CreatePostScreen(),
+      builder: (context, state) {
+        final groupId = state.uri.queryParameters['groupId'];
+        return CreatePostScreen(groupId: groupId);
+      },
     ),
     GoRoute(
       path: '/community/groups',
@@ -172,7 +175,11 @@ final appRouter = GoRouter(
     ),
     GoRoute(
       path: '/community/groups/feed',
-      builder: (context, state) => const GroupFeedScreen(),
+      builder: (context, state) {
+        final id = state.uri.queryParameters['id'] ?? '';
+        final name = state.uri.queryParameters['name'] ?? 'Group Feed';
+        return GroupFeedScreen(groupId: id, groupName: name);
+      },
     ),
     GoRoute(
       path: '/community/groups/chat/:id',

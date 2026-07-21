@@ -9,8 +9,12 @@ import '../../../../core/services/storage_service.dart';
 part 'community_provider.g.dart';
 
 @riverpod
-Stream<List<PostModel>> communityFeed(CommunityFeedRef ref) {
-  return ref.watch(communityRepositoryProvider).watchFeed();
+Stream<List<PostModel>> communityFeed(CommunityFeedRef ref, {String? groupId}) {
+  final currentUserId = ref.watch(currentUserProvider).value?.id;
+  return ref.watch(communityRepositoryProvider).watchFeed(
+    groupId: groupId,
+    currentUserId: currentUserId,
+  );
 }
 
 @riverpod
@@ -23,13 +27,12 @@ class CreatePostNotifier extends _$CreatePostNotifier {
   @override
   AsyncValue<void> build() => const AsyncValue.data(null);
 
-  Future<void> submit({required String body, File? mediaFile}) async {
+  Future<void> submit({required String body, File? mediaFile, String? mediaType, String? groupId}) async {
     state = const AsyncValue.loading();
     try {
       String? mediaUrl;
-      if (mediaFile != null) {
-        // Upload to Supabase Storage
-        mediaUrl = await ref.read(storageServiceProvider).uploadPostMedia(mediaFile);
+      if (mediaFile != null && mediaType != null) {
+        mediaUrl = await ref.read(storageServiceProvider).uploadPostMedia(mediaFile, mediaType);
       }
       final user = ref.read(currentUserProvider).value;
       if (user == null) {
@@ -39,11 +42,17 @@ class CreatePostNotifier extends _$CreatePostNotifier {
         userId: user.id,
         body: body,
         mediaUrl: mediaUrl,
-        mediaType: mediaFile != null ? 'image' : null,
+        mediaType: mediaType,
+        groupId: groupId,
       );
       state = const AsyncValue.data(null);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
   }
+}
+
+@riverpod
+Future<List<Map<String, dynamic>>> groupsList(GroupsListRef ref) {
+  return ref.watch(communityRepositoryProvider).fetchGroups();
 }

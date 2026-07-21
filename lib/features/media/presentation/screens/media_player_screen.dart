@@ -6,7 +6,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:youtube_player_flutter/youtube_player_flutter.dart';
+import 'package:video_player/video_player.dart';
+import 'package:chewie/chewie.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/constants/app_colors.dart';
@@ -27,7 +29,12 @@ class MediaPlayerScreen extends ConsumerStatefulWidget {
 
 class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
   // YouTube Player Controller
-  late YoutubePlayerController _ytController;
+  VideoPlayerController? _videoPlayerController;
+  ChewieController? _chewieController;
+  final _yt = YoutubeExplode();
+  String _thumbnailUrl = '';
+  String _videoTitle = '';
+  Duration _videoDuration = Duration.zero;
   bool _isInitialized = false;
 
   // Platform Channel for PiP
@@ -53,42 +60,60 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
     });
   }
 
-  void _initializePlayer() {
-    final rawVideoId = YoutubePlayer.convertUrlToId(widget.item.sourceUrl) ?? '';
-    
-    _ytController = YoutubePlayerController(
-      initialVideoId: rawVideoId,
-      flags: YoutubePlayerFlags(
+  Future<void> _initializePlayer() async {
+    try {
+      String videoUrl = widget.item.sourceUrl;
+      String? ytVideoId = VideoId.parseVideoId(widget.item.sourceUrl);
+      
+      if (ytVideoId != null) {
+        _thumbnailUrl = 'https://img.youtube.com/vi/$ytVideoId/hqdefault.jpg';
+        final video = await _yt.videos.get(ytVideoId);
+        _videoTitle = video.title;
+        _videoDuration = video.duration ?? Duration.zero;
+        
+        final manifest = await _yt.videos.streamsClient.getManifest(ytVideoId);
+        final streamInfo = manifest.muxed.withHighestBitrate();
+        videoUrl = streamInfo.url.toString();
+      } else {
+        _videoTitle = widget.item.title;
+      }
+
+      if (!mounted) return;
+
+      _videoPlayerController = VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+      await _videoPlayerController!.initialize();
+      
+      _videoPlayerController!.addListener(_playerListener);
+
+      _chewieController = ChewieController(
+        videoPlayerController: _videoPlayerController!,
         autoPlay: true,
-        mute: false,
-        isLive: widget.item.isLive,
-        // We'll seek manually after init to ensure resume works reliably
-        startAt: 0,
-      ),
-    )..addListener(_playerListener);
-  }
+        looping: false,
+        allowedScreenSleep: false,
+        allowFullScreen: true,
+        materialProgressColors: ChewieProgressColors(
+          playedColor: AppColors.primary,
+          handleColor: AppColors.primary,
+          backgroundColor: Colors.grey,
+          bufferedColor: Colors.grey[300]!,
+        ),
+      );
 
-  void _playerListener() async {
-    if (!mounted || !_ytController.value.isReady) return;
-
-    if (!_isInitialized) {
-      setState(() {
-        _isInitialized = true;
-      });
-
-      // Automatically resume progress
-      if (!_hasResumedProgress && !widget.item.isLive) {
-        _hasResumedProgress = true;
-        final repo = ref.read(mediaRepositoryProvider);
-        final progress = await repo.getPlaybackProgress(widget.item.id);
-        if (progress != null) {
-          final positionMs = progress['positionMs'] as int? ?? 0;
-          final durationMs = _ytController.metadata.duration.inMilliseconds;
-          if (positionMs > 0 && positionMs < (durationMs - 5000)) {
-            _ytController.seekTo(Duration(milliseconds: positionMs));
-            
-            // Show resume message
-            if (mounted) {
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+        
+        // Auto resume
+        if (!_hasResumedProgress && !widget.item.isLive) {
+          _hasResumedProgress = true;
+          final repo = ref.read(mediaRepositoryProvider);
+          final progress = await repo.getPlaybackProgress(widget.item.id);
+          if (progress != null) {
+            final positionMs = progress['positionMs'] as int? ?? 0;
+            final durationMs = _videoPlayerController!.value.duration.inMilliseconds;
+            if (positionMs > 0 && positionMs < (durationMs - 5000)) {
+              _videoPlayerController!.seekTo(Duration(milliseconds: positionMs));
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Resumed from ${_formatSeconds(positionMs ~/ 1000)}'),
@@ -99,14 +124,29 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
           }
         }
       }
+    } catch (e) {
+      debugPrint('[PLAYER] Init error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error loading video stream.')),
+        );
+      }
     }
+  }
+
+  void _playerListener() {
+    if (!mounted || _videoPlayerController == null) return;
+    if (_videoPlayerController!.value.hasError) {
+      debugPrint('VIDEO PLAYER ERROR: ${_videoPlayerController!.value.errorDescription}');
+    }
+    setState(() {}); // Update custom controls
   }
 
   Future<void> _saveCurrentProgress() async {
     if (!mounted || widget.item.isLive || !_isInitialized) return;
 
-    final positionMs = _ytController.value.position.inMilliseconds;
-    final durationMs = _ytController.metadata.duration.inMilliseconds;
+    final positionMs = _videoPlayerController?.value.position.inMilliseconds ?? 0;
+    final durationMs = _videoPlayerController?.value.duration.inMilliseconds ?? 0;
     
     if (positionMs <= 0 || durationMs <= 0) return;
 
@@ -150,10 +190,11 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
   }
 
   void _seekRelative(int seconds) {
-    final current = _ytController.value.position;
+    if (_videoPlayerController == null) return;
+    final current = _videoPlayerController!.value.position;
     var target = current + Duration(seconds: seconds);
     if (target < Duration.zero) target = Duration.zero;
-    _ytController.seekTo(target);
+    _videoPlayerController!.seekTo(target);
   }
 
   void _shareSermon() {
@@ -190,318 +231,303 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
 
   @override
   void dispose() {
-    // Save progress one last time on close
     _saveCurrentProgress();
     _progressSaveTimer?.cancel();
     
-    // Reset Orientations
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
     
-    _ytController.removeListener(_playerListener);
-    _ytController.dispose();
+    _videoPlayerController?.removeListener(_playerListener);
+    _videoPlayerController?.dispose();
+    _chewieController?.dispose();
+    _yt.close();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isFullScreen) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        body: WillPopScope(
-          onWillPop: () async {
-            _toggleFullScreen();
-            return false;
-          },
-          child: Stack(
-            children: [
-              Center(
-                child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: YoutubePlayer(
-                    controller: _ytController,
-                    showVideoProgressIndicator: true,
-                    progressIndicatorColor: AppColors.primary,
-                  ),
-                ),
-              ),
-              Positioned(
-                top: 24,
-                left: 24,
-                child: ClipOval(
-                  child: Container(
-                    color: Colors.black54,
-                    child: IconButton(
-                      icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
-                      onPressed: _toggleFullScreen,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
     final notesAsync = ref.watch(mediaNotesProvider(widget.item.id));
     final currentUserId = ref.watch(currentUserProvider).value?.id;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          'Playing Teaching',
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Picture in Picture',
-            icon: const Icon(Icons.picture_in_picture_alt_rounded, color: Colors.black),
-            onPressed: _enterPiPMode,
-          ),
-          IconButton(
-            tooltip: 'Share Sermon',
-            icon: const Icon(Icons.share_outlined, color: Colors.black),
-            onPressed: _shareSermon,
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // YouTube Player Container
-            Container(
-              color: Colors.black,
-              child: AspectRatio(
-                aspectRatio: 16 / 9,
-                child: YoutubePlayer(
-                  controller: _ytController,
-                  showVideoProgressIndicator: true,
-                  progressIndicatorColor: AppColors.primary,
-                ),
+          backgroundColor: const Color(0xFFF9FAFB),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_rounded, color: Colors.black),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: const Text(
+              'Playing Teaching',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.black,
               ),
             ),
-
-            // Video Player Custom Controller Row (Play/Pause, Replay 10s, Forward 10s, speed, Fullscreen)
-            Container(
-              color: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.replay_10_rounded, color: Colors.black87),
-                    onPressed: () => _seekRelative(-10),
-                  ),
-                  ValueListenableBuilder(
-                    valueListenable: _ytController,
-                    builder: (context, YoutubePlayerValue value, _) {
-                      return IconButton(
-                        icon: Icon(
-                          value.isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
-                          color: Colors.black87,
-                          size: 30,
-                        ),
-                        onPressed: () {
-                          value.isPlaying ? _ytController.pause() : _ytController.play();
-                        },
-                      );
-                    },
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.forward_10_rounded, color: Colors.black87),
-                    onPressed: () => _seekRelative(10),
-                  ),
-                  const Spacer(),
-                  // Playback speed selector button
-                  PopupMenuButton<double>(
-                    initialValue: _ytController.value.playbackRate,
-                    tooltip: 'Playback Speed',
-                    icon: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey[300]!),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '${_ytController.value.playbackRate}x',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                    onSelected: (speed) {
-                      _ytController.setPlaybackRate(speed);
-                      setState(() {});
-                    },
-                    itemBuilder: (context) => [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((s) {
-                      return PopupMenuItem(
-                        value: s,
-                        child: Text('${s}x'),
-                      );
-                    }).toList(),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.fullscreen_rounded, color: Colors.black87),
-                    onPressed: _toggleFullScreen,
-                  ),
-                ],
+            actions: [
+              IconButton(
+                tooltip: 'Picture in Picture',
+                icon: const Icon(Icons.picture_in_picture_alt_rounded, color: Colors.black),
+                onPressed: _enterPiPMode,
               ),
-            ),
+              IconButton(
+                tooltip: 'Share Sermon',
+                icon: const Icon(Icons.share_outlined, color: Colors.black),
+                onPressed: _shareSermon,
+              ),
+            ],
+          ),
+          body: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Video Player
+                _isInitialized && _chewieController != null
+                    ? AspectRatio(
+                        aspectRatio: _videoPlayerController!.value.aspectRatio > 0 ? _videoPlayerController!.value.aspectRatio : 16 / 9,
+                        child: Chewie(controller: _chewieController!),
+                      )
+                    : AspectRatio(
+                        aspectRatio: 16 / 9,
+                        child: Container(
+                          color: Colors.black,
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              if (_thumbnailUrl.isNotEmpty)
+                                CachedNetworkImage(
+                                  imageUrl: _thumbnailUrl,
+                                  fit: BoxFit.cover,
+                                  color: Colors.black45,
+                                  colorBlendMode: BlendMode.darken,
+                                ),
+                              const Center(child: CircularProgressIndicator(color: AppColors.primary)),
+                            ],
+                          ),
+                        ),
+                      ),
 
-            const Gap(16),
-
-            // Video details
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    widget.item.title,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      height: 1.3,
-                    ),
-                  ),
-                  const Gap(8),
-                  Row(
+                // Video Player Custom Controller Row (Play/Pause, Replay 10s, Forward 10s, speed, Fullscreen)
+                Container(
+                  color: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
                     children: [
-                      if (widget.item.isLive) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      IconButton(
+                        icon: const Icon(Icons.replay_10_rounded, color: Colors.black87),
+                        onPressed: () => _seekRelative(-10),
+                      ),
+                      !_isInitialized
+                          ? const IconButton(
+                              icon: Icon(Icons.play_arrow_rounded, color: Colors.grey, size: 30),
+                              onPressed: null,
+                            )
+                          : ValueListenableBuilder(
+                              valueListenable: _videoPlayerController ?? ValueNotifier(VideoPlayerValue(duration: Duration.zero)),
+                              builder: (context, val, _) {
+                                final bool isPlaying = _videoPlayerController?.value.isPlaying ?? false;
+                                return IconButton(
+                                  icon: Icon(
+                                    isPlaying ? Icons.pause_rounded : Icons.play_arrow_rounded,
+                                    color: Colors.black87,
+                                    size: 30,
+                                  ),
+                                  onPressed: () {
+                                    if (isPlaying) {
+                                      _videoPlayerController?.pause();
+                                    } else {
+                                      _videoPlayerController?.play();
+                                    }
+                                    setState(() {});
+                                  },
+                                );
+                              },
+                            ),
+                      IconButton(
+                        icon: const Icon(Icons.forward_10_rounded, color: Colors.black87),
+                        onPressed: () => _seekRelative(10),
+                      ),
+                      const Spacer(),
+                      // Playback speed selector button
+                      PopupMenuButton<double>(
+                        initialValue: _videoPlayerController?.value.playbackSpeed ?? 1.0,
+                        tooltip: 'Playback Speed',
+                        icon: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: AppColors.error,
+                            border: Border.all(color: Colors.grey[300]!),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Text(
-                            'LIVE BROADCAST',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
+                          child: Text(
+                            '${_videoPlayerController?.value.playbackSpeed ?? 1.0}x',
+                            style: const TextStyle(
+                              fontSize: 12,
                               fontWeight: FontWeight.bold,
+                              color: Colors.black87,
                             ),
                           ),
                         ),
-                        const Gap(10),
-                      ],
-                      if (widget.item.publishedAt != null)
-                        Text(
-                          'Published: ${DateFormat('MMMM d, yyyy').format(widget.item.publishedAt!)}',
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
+                        onSelected: (speed) {
+                          _videoPlayerController?.setPlaybackSpeed(speed);
+                          setState(() {});
+                        },
+                        itemBuilder: (context) => [0.5, 0.75, 1.0, 1.25, 1.5, 2.0].map((s) {
+                          return PopupMenuItem(
+                            value: s,
+                            child: Text('${s}x'),
+                          );
+                        }).toList(),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.fullscreen_rounded, color: Colors.black87),
+                        onPressed: _toggleFullScreen,
+                      ),
                     ],
                   ),
-                  const Gap(16),
+                ),
 
-                  // Open on YouTube Action Card
-                  InkWell(
-                    onTap: _openYouTube,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFFEBEB), // Pale red
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: const Color(0xFFFFCCCC)),
+                const Gap(16),
+
+                // Video details
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.item.title,
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                          height: 1.3,
+                        ),
                       ),
-                      child: Row(
-                        children: const [
-                          Icon(Icons.open_in_new_rounded, color: Color(0xFFFF0000), size: 20),
-                          Gap(12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Watch directly on YouTube',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: Color(0xFF990000),
-                                  ),
+                      const Gap(8),
+                      Row(
+                        children: [
+                          if (widget.item.isLive) ...[
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.error,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Text(
+                                'LIVE BROADCAST',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.bold,
                                 ),
-                                Text(
-                                  'Join live chat, comment, and support the ministry channel.',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 11,
-                                    color: Color(0xFFCC3333),
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
-                          ),
-                          Icon(Icons.chevron_right_rounded, color: Color(0xFFFF0000)),
+                            const Gap(10),
+                          ],
+                          if (widget.item.publishedAt != null)
+                            Text(
+                              'Published: ${DateFormat('MMMM d, yyyy').format(widget.item.publishedAt!)}',
+                              style: const TextStyle(
+                                fontFamily: 'Inter',
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
                         ],
                       ),
-                    ),
+                      const Gap(16),
+
+                      // Open on YouTube Action Card
+                      InkWell(
+                        onTap: _openYouTube,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFEBEB), // Pale red
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFFCCCC)),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.open_in_new_rounded, color: Color(0xFFFF0000), size: 20),
+                              Gap(12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Watch directly on YouTube',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                        color: Color(0xFF990000),
+                                      ),
+                                    ),
+                                    Text(
+                                      'Join live chat, comment, and support the ministry channel.',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 11,
+                                        color: Color(0xFFCC3333),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Icon(Icons.chevron_right_rounded, color: Color(0xFFFF0000)),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const Gap(24),
+
+                      // Synchronized Sermon Notes Interface
+                      _buildNotesPanel(notesAsync, currentUserId, isDark: false),
+
+                      const Gap(24),
+
+                      // Description
+                      if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
+                        const Text(
+                          'Sermon Description',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        const Gap(8),
+                        Text(
+                          widget.item.description!,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 13,
+                            color: Color(0xFF4B5563),
+                            height: 1.5,
+                          ),
+                        ),
+                        const Gap(24),
+                      ],
+
+                      // Related Videos
+                      _buildRelatedVideosSection(),
+
+                      const Gap(40),
+                    ],
                   ),
-
-                  const Gap(24),
-
-                  // Synchronized Sermon Notes Interface
-                  _buildNotesPanel(notesAsync, currentUserId, isDark: false),
-
-                  const Gap(24),
-
-                  // Description
-                  if (widget.item.description != null && widget.item.description!.isNotEmpty) ...[
-                    const Text(
-                      'Sermon Description',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black,
-                      ),
-                    ),
-                    const Gap(8),
-                    Text(
-                      widget.item.description!,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        color: Color(0xFF4B5563),
-                        height: 1.5,
-                      ),
-                    ),
-                    const Gap(24),
-                  ],
-
-                  // Related Videos
-                  _buildRelatedVideosSection(),
-
-                  const Gap(40),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-    );
+          ),
+        );
   }
 
   Widget _buildNotesPanel(
@@ -542,8 +568,8 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                 onPressed: () => _addNoteDialog(currentUserId),
                 icon: const Icon(Icons.add, size: 14, color: Colors.white),
                 label: ValueListenableBuilder(
-                  valueListenable: _ytController,
-                  builder: (context, YoutubePlayerValue val, _) {
+                  valueListenable: _videoPlayerController ?? ValueNotifier(VideoPlayerValue(duration: Duration.zero)),
+                  builder: (context, VideoPlayerValue val, _) {
                     final time = val.position.inSeconds;
                     return Text(
                       'Note @ ${_formatSeconds(time)}',
@@ -558,6 +584,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
+                  minimumSize: Size.zero,
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
@@ -601,7 +628,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                       // Timestamp seeker chip
                       InkWell(
                         onTap: () {
-                          _ytController.seekTo(Duration(seconds: note.timestampSeconds));
+                          _videoPlayerController?.seekTo(Duration(seconds: note.timestampSeconds));
                         },
                         borderRadius: BorderRadius.circular(6),
                         child: Container(
@@ -695,7 +722,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
     }
 
     final controller = TextEditingController();
-    final timestamp = _ytController.value.position.inSeconds;
+    final timestamp = _videoPlayerController?.value.position.inSeconds ?? 0;
 
     showDialog(
       context: context,
@@ -733,7 +760,10 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              minimumSize: Size.zero,
+            ),
             child: const Text('Save Reflection', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -774,7 +804,10 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                 Navigator.pop(context);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              minimumSize: Size.zero,
+            ),
             child: const Text('Update', style: TextStyle(color: Colors.white)),
           ),
         ],

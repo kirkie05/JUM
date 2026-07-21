@@ -44,7 +44,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
     // Ideally we would fetch the specific post here or pass it along, 
     // but we can just show the comments if we don't have the post directly.
     // For simplicity, we just fetch the feed to find the post.
-    final feedAsync = ref.watch(communityFeedProvider);
+    final feedAsync = ref.watch(communityFeedProvider(groupId: null));
     final post = feedAsync.value?.where((p) => p.id == widget.postId).firstOrNull;
 
     return Scaffold(
