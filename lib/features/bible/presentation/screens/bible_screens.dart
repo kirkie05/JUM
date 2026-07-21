@@ -117,7 +117,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
           icon: Icon(Icons.menu, color: textColor),
           onPressed: () {
             if (booksAsync.hasValue) {
-              _showBookChapterPicker(context, ref, booksAsync.value!, currentBookId, currentCh);
+              _showBibleMenuSheet(context, ref, booksAsync.value!, currentBookId, currentCh);
             }
           },
         ),
@@ -128,7 +128,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
               orElse: () => books.first,
             );
             return InkWell(
-              onTap: () => _showBookChapterPicker(context, ref, books, currentBookId, currentCh),
+              onTap: () => _showScripturePickerSheet(context, ref, books, currentBookId, currentCh),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -340,7 +340,7 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
     );
   }
 
-  void _showBookChapterPicker(
+  void _showBibleMenuSheet(
     BuildContext context,
     WidgetRef ref,
     List<BibleBook> books,
@@ -353,6 +353,26 @@ class _BibleReaderScreenState extends ConsumerState<BibleReaderScreen> {
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) => _BibleDashboardSheet(
+        books: books,
+        activeBookId: activeBookId,
+        activeCh: activeCh,
+      ),
+    );
+  }
+
+  void _showScripturePickerSheet(
+    BuildContext context,
+    WidgetRef ref,
+    List<BibleBook> books,
+    String activeBookId,
+    int activeCh,
+  ) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => _ScripturePickerSheet(
         books: books,
         activeBookId: activeBookId,
         activeCh: activeCh,
@@ -629,73 +649,6 @@ class _BibleDashboardSheet extends ConsumerWidget {
                     );
                   },
                   orElse: () => const SizedBox.shrink(),
-                ),
-                const Divider(),
-
-                // 7. Select Scripture Expandable
-                ExpansionTile(
-                  leading: const Icon(Icons.book_outlined, color: AppColors.primary),
-                  title: const Text('Select Scripture', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87)),
-                  subtitle: const Text('Browse books and chapters', style: TextStyle(color: Colors.grey)),
-                  children: [
-                    ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: books.length,
-                      itemBuilder: (c, idx) {
-                        final book = books[idx];
-                        final isSelected = book.id == activeBookId;
-                        return ExpansionTile(
-                          initiallyExpanded: isSelected,
-                          title: Text(
-                            book.name,
-                            style: TextStyle(
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                              color: isSelected ? Colors.black : Colors.black87,
-                            ),
-                          ),
-                          children: [
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              padding: const EdgeInsets.all(8),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 5,
-                                mainAxisSpacing: 8,
-                                crossAxisSpacing: 8,
-                              ),
-                              itemCount: book.numberOfChapters,
-                              itemBuilder: (ctx2, chIdx) {
-                                final chNum = chIdx + 1;
-                                final isChSel = isSelected && (chNum == activeCh);
-                                return InkWell(
-                                  onTap: () {
-                                    ref.read(currentBookProvider.notifier).state = book.id;
-                                    ref.read(currentChapterNumberProvider.notifier).state = chNum;
-                                    Navigator.pop(context);
-                                  },
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      color: isChSel ? Colors.black : Colors.grey.shade100,
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    alignment: Alignment.center,
-                                    child: Text(
-                                      '$chNum',
-                                      style: TextStyle(
-                                        color: isChSel ? Colors.white : Colors.black87,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
                 ),
               ],
             ),
@@ -1262,6 +1215,106 @@ class _BibleSearchScreenState extends ConsumerState<BibleSearchScreen> {
             style: TextStyle(
               color: isDark ? Colors.white38 : Colors.grey.shade400,
               height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ScripturePickerSheet extends ConsumerWidget {
+  final List<BibleBook> books;
+  final String activeBookId;
+  final int activeCh;
+
+  const _ScripturePickerSheet({
+    Key? key,
+    required this.books,
+    required this.activeBookId,
+    required this.activeCh,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.85,
+      padding: const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(
+            child: Container(
+              width: 40,
+              height: 5,
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
+          const Gap(16),
+          const Center(
+            child: Text(
+              'Select Scripture',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, fontFamily: 'Inter', color: Colors.black87),
+            ),
+          ),
+          const Gap(16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: books.length,
+              itemBuilder: (c, idx) {
+                final book = books[idx];
+                final isSelected = book.id == activeBookId;
+                return ExpansionTile(
+                  initiallyExpanded: isSelected,
+                  title: Text(
+                    book.name,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                      color: isSelected ? Colors.black : Colors.black87,
+                      fontSize: 16,
+                    ),
+                  ),
+                  children: [
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(12),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 5,
+                        mainAxisSpacing: 10,
+                        crossAxisSpacing: 10,
+                      ),
+                      itemCount: book.numberOfChapters,
+                      itemBuilder: (ctx2, chIdx) {
+                        final chNum = chIdx + 1;
+                        final isChSel = isSelected && (chNum == activeCh);
+                        return InkWell(
+                          onTap: () {
+                            ref.read(currentBookProvider.notifier).state = book.id;
+                            ref.read(currentChapterNumberProvider.notifier).state = chNum;
+                            Navigator.pop(context);
+                          },
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isChSel ? AppColors.primary : Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            alignment: Alignment.center,
+                            child: Text(
+                              '$chNum',
+                              style: TextStyle(
+                                color: isChSel ? Colors.white : Colors.black87,
+                                fontWeight: isChSel ? FontWeight.bold : FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
           ),
         ],
