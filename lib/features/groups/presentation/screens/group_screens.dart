@@ -304,24 +304,66 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen> {
                       const Gap(24),
                       
                       // ACTION BUTTON
-                      if (user != null)
-                        _isActionLoading 
-                          ? const Center(child: CircularProgressIndicator())
-                          : SizedBox(
-                              width: double.infinity,
-                              height: 50,
-                              child: isMember
-                                ? OutlinedButton(
-                                    onPressed: () => _handleLeave(user.id),
-                                    child: const Text('Leave Group', style: TextStyle(color: Colors.red)),
-                                  )
-                                : ElevatedButton(
-                                    onPressed: isPendingRequest ? null : () => _handleJoin(user.id, group.visibility),
-                                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
-                                    child: Text(isPendingRequest ? 'Request Pending' : (group.visibility == 'open' ? 'Join Group' : 'Request to Join')),
-                                  ),
-                            ),
+                      if (user == null)
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please log in to join groups.')));
+                            },
+                            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                            child: const Text('Log in to Join'),
+                          ),
+                        )
+                      else if (_isActionLoading)
+                        const Center(child: CircularProgressIndicator())
+                      else
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: isMember
+                            ? OutlinedButton(
+                                onPressed: () => _handleLeave(user.id),
+                                child: const Text('Leave Group', style: TextStyle(color: Colors.red)),
+                              )
+                            : ElevatedButton(
+                                onPressed: isPendingRequest ? null : () => _handleJoin(user.id, group.visibility),
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+                                child: Text(isPendingRequest ? 'Request Pending' : (group.visibility == 'open' ? 'Join Group' : 'Request to Join')),
+                              ),
+                        ),
                             
+                      if (isMember) ...[
+                        const Gap(16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => context.push('/community/groups/chat/${group.id}?name=${Uri.encodeComponent(group.name)}'),
+                                icon: const Icon(Icons.chat_bubble_outline),
+                                label: const Text('Group Chat'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.primary,
+                                  foregroundColor: Colors.white,
+                                ),
+                              ),
+                            ),
+                            const Gap(12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => context.push('/community/groups/feed?id=${group.id}&name=${Uri.encodeComponent(group.name)}'),
+                                icon: const Icon(Icons.dynamic_feed),
+                                label: const Text('Group Feed'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(color: AppColors.primary),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                       const Gap(32),
                       
                       // ANNOUNCEMENTS

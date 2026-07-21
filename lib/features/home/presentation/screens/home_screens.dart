@@ -415,6 +415,13 @@ class HomeScreen extends ConsumerWidget {
                     color: const Color(0xFFEF4444), // red
                     onTap: () => context.push('/events'),
                   ),
+                  _buildActionCard(
+                    context,
+                    title: 'Groups',
+                    icon: Icons.group_rounded,
+                    color: const Color(0xFFDD6B20), // orange
+                    onTap: () => context.push('/groups'),
+                  ),
                 ],
               ),
 

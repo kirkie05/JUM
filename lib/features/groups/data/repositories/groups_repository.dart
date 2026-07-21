@@ -12,7 +12,7 @@ class GroupsRepository {
   // --- Groups ---
 
   Future<List<GroupModel>> getGroups({String? searchQuery}) async {
-    var query = _supabase.from('groups').select('*, leader:profiles!groups_leader_id_fkey(name, avatar_url), member_count:group_members(count)').eq('is_active', true);
+    var query = _supabase.from('groups').select('*, leader:profiles!groups_leader_id_fkey(name, avatar_url), member_count:group_members(count)');
     
     if (searchQuery != null && searchQuery.isNotEmpty) {
       query = query.ilike('name', '%$searchQuery%');
