@@ -826,6 +826,13 @@ class MoreMenuScreen extends StatelessWidget {
               ),
               _buildRow(
                 context,
+                label: 'Groups',
+                icon: Icons.group_rounded,
+                iconColor: const Color(0xFFDD6B20),
+                route: '/groups',
+              ),
+              _buildRow(
+                context,
                 label: 'My Profile',
                 icon: Icons.person_rounded,
                 iconColor: const Color(0xFF4A5568),

@@ -23,6 +23,9 @@ import '../../features/events/presentation/screens/event_screens.dart';
 import '../../features/bible/presentation/screens/bible_screens.dart';
 import '../../features/bible/presentation/screens/bible_reading_plan_screen.dart';
 import '../../features/messaging/presentation/screens/messaging_screens.dart';
+import '../../features/groups/presentation/screens/group_screens.dart' as group_mod;
+import '../../features/groups/presentation/screens/group_admin_screens.dart';
+import '../../features/groups/presentation/screens/group_form_screen.dart';
 
 import '../../features/profile/presentation/screens/profile_screens.dart';
 import '../../features/admin/presentation/screens/admin_screens.dart';
@@ -157,6 +160,29 @@ final appRouter = GoRouter(
     ),
 
     // Other app sub-routes
+    GoRoute(
+      path: '/groups',
+      builder: (context, state) => const group_mod.GroupsDirectoryScreen(),
+    ),
+    GoRoute(
+      path: '/groups/:id',
+      builder: (context, state) =>
+          group_mod.GroupDetailScreen(groupId: state.pathParameters['id'] ?? ''),
+    ),
+    GoRoute(
+      path: '/groups/create',
+      builder: (context, state) => const GroupFormScreen(),
+    ),
+    GoRoute(
+      path: '/groups/:id/edit',
+      builder: (context, state) =>
+          GroupFormScreen(groupId: state.pathParameters['id'] ?? ''),
+    ),
+    GoRoute(
+      path: '/groups/:id/admin',
+      builder: (context, state) =>
+          GroupAdminScreen(groupId: state.pathParameters['id'] ?? ''),
+    ),
     GoRoute(
       path: '/community/:postId',
       builder: (context, state) =>
