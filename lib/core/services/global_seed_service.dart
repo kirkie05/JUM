@@ -14,7 +14,7 @@ class GlobalSeedService {
       debugPrint('[SEED_SERVICE] Checking database for empty tables...');
 
       await _seedCommunityPosts();
-      await _seedMarketplaceItems();
+
       await _seedEvents();
       await _seedSermons();
       await _seedGospelArmyCourses();
@@ -43,26 +43,6 @@ class GlobalSeedService {
     }
   }
 
-  Future<void> _seedMarketplaceItems() async {
-    final countRes = await _supabase.from('products').select('id').limit(1);
-    if ((countRes as List).isEmpty) {
-      debugPrint('[SEED_SERVICE] Seeding Marketplace Items...');
-      final uuid = const Uuid();
-      final List<Map<String, dynamic>> products = List.generate(5, (index) {
-        return {
-          'id': uuid.v4(),
-          'name': 'JUM Product $index',
-          'description': 'This is a description for product $index. High quality material.',
-          'price': (index + 1) * 10.0,
-          'image_url': 'https://picsum.photos/seed/product$index/400/400',
-          'category': index % 2 == 0 ? 'Apparel' : 'Books',
-          'stock_quantity': 100,
-          'created_at': DateTime.now().toIso8601String(),
-        };
-      });
-      await _supabase.from('products').insert(products);
-    }
-  }
 
   Future<void> _seedEvents() async {
     final countRes = await _supabase.from('events').select('id').limit(1);

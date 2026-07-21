@@ -41,24 +41,42 @@ class HomeScreen extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Greeting Section
-              Text(
-                'Welcome, ${user?.firstName ?? 'Friend'}',
-                style: const TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 24.0,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const Gap(4),
-              const Text(
-                'May your day be filled with intentional reflection.',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14.0,
-                  color: Color(0xFF6B7280),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome, ${user?.firstName ?? 'Friend'}',
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 24.0,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const Gap(4),
+                        const Text(
+                          'May your day be filled with intentional reflection.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 14.0,
+                            color: Color(0xFF6B7280),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Image.asset(
+                    'assets/images/logo/Jum Logo Black.png',
+                    height: 32,
+                    fit: BoxFit.contain,
+                  ),
+                ],
               ),
 
               const Gap(24),
@@ -382,13 +400,7 @@ class HomeScreen extends ConsumerWidget {
                     color: const Color(0xFF6366F1), // indigo
                     onTap: () => context.push('/gospel_army'),
                   ),
-                  _buildActionCard(
-                    context,
-                    title: 'Marketplace',
-                    icon: Icons.storefront_rounded,
-                    color: const Color(0xFF10B981), // emerald
-                    onTap: () => context.push('/marketplace'),
-                  ),
+
                   _buildActionCard(
                     context,
                     title: 'Bible',
@@ -768,13 +780,7 @@ class MoreMenuScreen extends StatelessWidget {
                 iconColor: const Color(0xFF3182CE),
                 route: '/events',
               ),
-              _buildRow(
-                context,
-                label: 'Marketplace',
-                icon: Icons.shopping_bag_rounded,
-                iconColor: const Color(0xFFDD6B20),
-                route: '/marketplace',
-              ),
+
             ],
           ),
           const Gap(28),

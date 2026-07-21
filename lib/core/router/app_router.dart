@@ -23,7 +23,7 @@ import '../../features/events/presentation/screens/event_screens.dart';
 import '../../features/bible/presentation/screens/bible_screens.dart';
 import '../../features/bible/presentation/screens/bible_reading_plan_screen.dart';
 import '../../features/messaging/presentation/screens/messaging_screens.dart';
-import '../../features/marketplace/presentation/screens/marketplace_screens.dart';
+
 import '../../features/profile/presentation/screens/profile_screens.dart';
 import '../../features/admin/presentation/screens/admin_screens.dart';
 import '../../features/admin/presentation/screens/admin_reading_plans_screen.dart';
@@ -310,15 +310,6 @@ final appRouter = GoRouter(
       builder: (context, state) => const NotificationsScreen(),
     ),
     GoRoute(
-      path: '/marketplace',
-      builder: (context, state) => const ProductListScreen(),
-    ),
-    GoRoute(
-      path: '/marketplace/:id',
-      builder: (context, state) =>
-          ProductDetailScreen(productId: state.pathParameters['id'] ?? ''),
-    ),
-    GoRoute(
       path: '/profile',
       builder: (context, state) => const ProfileScreen(),
     ),
@@ -330,10 +321,7 @@ final appRouter = GoRouter(
       path: '/profile/settings',
       builder: (context, state) => const SettingsScreen(),
     ),
-    GoRoute(
-      path: '/profile/orders',
-      builder: (context, state) => const MyOrdersScreen(),
-    ),
+
 
     // Admin routes with admin layout forced
     GoRoute(

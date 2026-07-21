@@ -45,16 +45,11 @@ class JumAppShell extends StatelessWidget {
       appBar: currentIndex == 1
           ? null
           : AppBar(
-              title: const Text(
-          'JUM',
-          style: TextStyle(
-            fontFamily: AppTextStyles.fontFamily,
-            fontWeight: FontWeight.bold,
-            fontSize: 20.0,
-            letterSpacing: 1.5,
-            color: AppColors.textPrimary,
-          ),
-        ),
+              title: Image.asset(
+                'assets/images/logo/Jum Logo Black.png',
+                height: 24,
+                fit: BoxFit.contain,
+              ),
         centerTitle: false,
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -211,12 +206,12 @@ class JumAppShell extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: AppSizes.paddingMd),
                       child: Row(
                         children: [
-                          const Icon(Icons.auto_awesome, color: AppColors.primary, size: 28),
-                          const SizedBox(width: AppSizes.paddingXs),
                           Expanded(
-                            child: Text(
-                              'JUM',
-                              style: AppTextStyles.h2.copyWith(color: AppColors.textPrimary, letterSpacing: 1.5),
+                            child: Image.asset(
+                              'assets/images/logo/Jum Logo Black.png',
+                              height: 32,
+                              alignment: Alignment.centerLeft,
+                              fit: BoxFit.contain,
                             ),
                           ),
                         ],

@@ -103,6 +103,7 @@ dev_dependencies:
   json_serializable: any
   riverpod_generator: any
   mocktail: ^1.0.5
+  flutter_launcher_icons: ^0.14.4
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -113,6 +114,7 @@ flutter:
 
   assets:
     - assets/images/
+    - assets/images/logo/
     - assets/icons/
     - assets/lottie/
     - .env
@@ -129,3 +131,13 @@ flutter:
           weight: 700
         - asset: assets/fonts/Inter-Black.ttf
           weight: 900
+
+flutter_icons:
+  android: true
+  ios: true
+  image_path: "assets/images/logo/Jum Favicon Black.png"
+  web:
+    generate: true
+    image_path: "assets/images/logo/Jum Favicon Black.png"
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
