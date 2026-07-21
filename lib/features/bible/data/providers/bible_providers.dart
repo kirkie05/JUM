@@ -9,7 +9,27 @@ final bibleRepositoryProvider = Provider<BibleRepository>((ref) {
   return BibleRepository();
 });
 
-final bibleTranslationProvider = StateProvider<String>((ref) => 'BSB');
+
+// Supported translations mapped from Bolls Life API
+const Map<String, String> bibleTranslationsMap = {
+  'KJV': 'King James Version',
+  'NKJV': 'New King James Version',
+  'ESV': 'English Standard Version',
+  'NASB': 'New American Standard Bible',
+  'NIV': 'New International Version',
+  'NLT': 'New Living Translation',
+  'CSB17': 'Christian Standard Bible',
+  'BSB': 'Berean Standard Bible',
+  'MSG': 'The Message',
+  'AMP': 'Amplified Bible',
+  'NET': 'New English Translation',
+  'RSV': 'Revised Standard Version',
+  'WEB': 'World English Bible',
+  'ASV': 'American Standard Version',
+  'YLT': 'Young\'s Literal Translation',
+};
+
+final bibleTranslationProvider = StateProvider<String>((ref) => 'KJV');
 
 final bibleBooksProvider = FutureProvider<List<BibleBook>>((ref) async {
   final repo = ref.watch(bibleRepositoryProvider);

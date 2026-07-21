@@ -8,7 +8,7 @@ class BibleRepository {
   // CDN Base for free open-source scripture hosting
   static const String baseUrl = 'https://cdn.jsdelivr.net/gh/wldeh/bible-api/bibles';
   static const String defaultTranslation = 'BSB';
-  static const String _boxName = 'bible_cache';
+  static const String _boxName = 'bolls_bible_cache';
 
   late final Dio _dio;
   Box<String>? _cacheBox;
@@ -28,23 +28,7 @@ class BibleRepository {
 
   // Normalizer maps user friendly selectors to precise repository dataset identifiers
   String _normalizeTranslation(String input) {
-    switch (input.toUpperCase()) {
-      case 'BSB':
-        return 'en-bsb';
-      case 'KJV':
-        return 'en-kjv';
-      case 'ASV':
-        return 'en-asv';
-      case 'WEB':
-        return 'en-web';
-      case 'FBV':
-        return 'en-fbv';
-      case 'RV':
-        return 'en-rv';
-      // Standard fallbacks for non-public datasets
-      default:
-        return 'en-bsb'; 
-    }
+    return input.toUpperCase();
   }
 
   // Canonical Book Index: Instantly yields data for ALL translations without ping delays.
@@ -172,8 +156,13 @@ class BibleRepository {
     final cachedJsonStr = _cacheBox!.get(cacheKey);
     if (cachedJsonStr != null) {
       try {
-        final Map<String, dynamic> jsonMap = jsonDecode(cachedJsonStr);
-        final chapter = BibleChapter.fromJsonWldeh(chapterNumber, jsonMap);
+        final dynamic decoded = jsonDecode(cachedJsonStr);
+        BibleChapter chapter;
+        if (decoded is List) {
+          chapter = BibleChapter.fromJsonBolls(chapterNumber, decoded);
+        } else {
+          chapter = BibleChapter.fromJsonWldeh(chapterNumber, decoded as Map<String, dynamic>);
+        }
         _chapterMemoryCache[cacheKey] = chapter;
         return chapter;
       } catch (_) {
@@ -183,17 +172,25 @@ class BibleRepository {
 
     // 3. Fetch from Network
     try {
-      final url = '$baseUrl/$vId/books/$bookSlug/chapters/$chapterNumber.json';
-      final response = await _dio.get(url);
+      final int bookIndex = _canonicalBooks.indexWhere((b) => b['id'] == bookId.toUpperCase()) + 1;
+      final actualBookIndex = bookIndex > 0 ? bookIndex : 1;
       
-      final Map<String, dynamic> jsonMap = response.data is String 
+      final url = 'https://bolls.life/get-chapter/$vId/$actualBookIndex/$chapterNumber/';
+      
+      // Use a new Dio without the base config since we are calling an external API
+      final fetchDio = Dio();
+      final response = await fetchDio.get(url);
+      
+      final List<dynamic> jsonList = response.data is String 
           ? jsonDecode(response.data) 
-          : (response.data as Map<String, dynamic>);
+          : (response.data as List<dynamic>);
       
       // Save raw JSON to local cache for offline reading later
-      _cacheBox!.put(cacheKey, jsonEncode(jsonMap));
+      _cacheBox!.put(cacheKey, jsonEncode(jsonList));
 
-      final chapter = BibleChapter.fromJsonWldeh(chapterNumber, jsonMap);
+      print('DEBUG: jsonList length = ${jsonList.length}');
+      final chapter = BibleChapter.fromJsonBolls(chapterNumber, jsonList);
+      print('DEBUG: chapter content length = ${chapter.content.length}');
       _chapterMemoryCache[cacheKey] = chapter;
       return chapter;
     } catch (e) {

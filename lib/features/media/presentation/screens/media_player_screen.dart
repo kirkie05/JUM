@@ -548,8 +548,9 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: const [
+              Expanded(
+                child: Row(
+                  children: const [
                   Icon(Icons.note_alt_rounded, color: AppColors.primary, size: 20),
                   Gap(8),
                   Text(
@@ -563,6 +564,7 @@ class _MediaPlayerScreenState extends ConsumerState<MediaPlayerScreen> {
                     ),
                   ),
                 ],
+              ),
               ),
               ElevatedButton.icon(
                 onPressed: () => _addNoteDialog(currentUserId),

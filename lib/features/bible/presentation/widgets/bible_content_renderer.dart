@@ -23,7 +23,7 @@ class BibleContentRenderer extends ConsumerWidget {
     final selectedVerse = ref.watch(selectedVerseProvider);
     final fontSize = ref.watch(bibleFontSizeProvider);
     final fontFamily = ref.watch(bibleFontFamilyProvider);
-    final readingTheme = ref.watch(bibleReadingThemeProvider);
+    final readingTheme = ref.watch(bibleReadingThemeProvider); print("DEBUG: BibleContentRenderer build called with ${chapter.content.length} nodes");
     
     final currentBook = ref.watch(currentBookProvider);
     final currentChapter = ref.watch(currentChapterNumberProvider);
@@ -49,7 +49,7 @@ class BibleContentRenderer extends ConsumerWidget {
             case ChapterNodeType.lineBreak:
               return const Gap(16);
             case ChapterNodeType.verse:
-              final vNum = node.verseNumber ?? 0;
+              final vNum = node.verseNumber ?? 0; print("DEBUG: Building verse $vNum");
               final highlightCode = highlights['${currentBook.toUpperCase()}.$currentChapter.$vNum'];
               final highlightColor = highlightCode != null ? Color(highlightCode) : null;
               return _buildVerse(
@@ -115,7 +115,7 @@ class BibleContentRenderer extends ConsumerWidget {
     required Color textColor,
     Color? highlightColor,
   }) {
-    final vNum = node.verseNumber ?? 0;
+    final vNum = node.verseNumber ?? 0; print("DEBUG: Building verse $vNum");
     final isSelected = vNum == currentlySelected;
     final plainText = _flattenNodeContent(node.content);
 

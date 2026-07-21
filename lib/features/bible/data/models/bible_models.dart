@@ -94,6 +94,35 @@ class BibleChapter {
     );
   }
 
+  factory BibleChapter.fromJsonBolls(int chapterNum, List<dynamic> list) {
+    final List<ChapterNode> nodes = [];
+    
+    for (var item in list) {
+      final int vNum = item['verse'] as int? ?? 0;
+      final String rawText = item['text']?.toString() ?? '';
+      
+      // Clean up HTML/XML tags like <S>xxxx</S> and <mark>
+      final String cleanText = rawText
+          .replaceAll(RegExp(r'<S>\d+</S>'), '')
+          .replaceAll('<mark>', '')
+          .replaceAll('</mark>', '')
+          .replaceAll(RegExp(r'<[^>]*>'), '') // generic cleanup
+          .replaceAll(RegExp(r'\s+'), ' ') // replace multiple spaces with single space
+          .trim();
+      
+      nodes.add(ChapterNode(
+        type: ChapterNodeType.verse,
+        verseNumber: vNum,
+        content: [cleanText],
+      ));
+    }
+    
+    return BibleChapter(
+      number: chapterNum,
+      content: nodes,
+    );
+  }
+
   factory BibleChapter.fromHtml(int chapterNum, String htmlContent) {
     final document = parse(htmlContent);
     final List<ChapterNode> nodes = [];

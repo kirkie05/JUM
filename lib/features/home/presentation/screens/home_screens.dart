@@ -209,7 +209,7 @@ class HomeScreen extends ConsumerWidget {
                     ),
                   ),
                   GestureDetector(
-                    onTap: () {},
+                    onTap: () => context.push('/events'),
                     child: const Text(
                       'VIEW ALL',
                       style: TextStyle(
