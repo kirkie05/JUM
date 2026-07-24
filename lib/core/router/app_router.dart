@@ -279,13 +279,7 @@ final appRouter = GoRouter(
         lessonId: state.pathParameters['lessonId'] ?? '',
       ),
     ),
-    GoRoute(
-      path: '/gospel_army/:courseId/lesson/:lessonId/quiz',
-      builder: (context, state) => QuizScreen(
-        courseId: state.pathParameters['courseId'] ?? '',
-        lessonId: state.pathParameters['lessonId'] ?? '',
-      ),
-    ),
+
     GoRoute(
       path: '/bible/search',
       builder: (context, state) => const BibleSearchScreen(),

@@ -958,8 +958,8 @@ class _GroupChatScreenState extends ConsumerState<GroupChatScreen> {
     _msgController.clear();
     try {
       await ref.read(sendMessageNotifierProvider.notifier).sendGroupMessage(
-        widget.conversationId,
-        txt,
+        conversationId: widget.conversationId,
+        body: txt,
       );
     } catch (e) {
       if (mounted) {

@@ -4,7 +4,8 @@ class EnrollmentModel {
   final String courseId;
   final int progressPercent;
   final DateTime? completedAt;
-  final String? receiptUrl;
+  final DateTime createdAt;
+  final int? totalStudyTimeMins;
 
   const EnrollmentModel({
     required this.id,
@@ -12,7 +13,8 @@ class EnrollmentModel {
     required this.courseId,
     required this.progressPercent,
     this.completedAt,
-    this.receiptUrl,
+    required this.createdAt,
+    this.totalStudyTimeMins,
   });
 
   EnrollmentModel copyWith({
@@ -21,7 +23,8 @@ class EnrollmentModel {
     String? courseId,
     int? progressPercent,
     DateTime? completedAt,
-    String? receiptUrl,
+    DateTime? createdAt,
+    int? totalStudyTimeMins,
   }) {
     return EnrollmentModel(
       id: id ?? this.id,
@@ -29,7 +32,8 @@ class EnrollmentModel {
       courseId: courseId ?? this.courseId,
       progressPercent: progressPercent ?? this.progressPercent,
       completedAt: completedAt ?? this.completedAt,
-      receiptUrl: receiptUrl ?? this.receiptUrl,
+      createdAt: createdAt ?? this.createdAt,
+      totalStudyTimeMins: totalStudyTimeMins ?? this.totalStudyTimeMins,
     );
   }
 
@@ -38,9 +42,10 @@ class EnrollmentModel {
       id: json['id'] as String,
       userId: json['user_id'] as String,
       courseId: json['course_id'] as String,
-      progressPercent: json['progress_percent'] as int,
+      progressPercent: json['progress_percent'] as int? ?? 0,
       completedAt: json['completed_at'] != null ? DateTime.parse(json['completed_at'] as String) : null,
-      receiptUrl: json['receipt_url'] as String?,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      totalStudyTimeMins: json['total_study_time_mins'] as int?,
     );
   }
 
@@ -51,7 +56,8 @@ class EnrollmentModel {
       'course_id': courseId,
       'progress_percent': progressPercent,
       'completed_at': completedAt?.toIso8601String(),
-      'receipt_url': receiptUrl,
+      'created_at': createdAt.toIso8601String(),
+      'total_study_time_mins': totalStudyTimeMins,
     };
   }
 }

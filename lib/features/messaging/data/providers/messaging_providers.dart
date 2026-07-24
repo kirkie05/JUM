@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../../core/providers/current_user_provider.dart';
 import '../../../auth/data/models/user_model.dart';
@@ -19,15 +20,44 @@ class SendMessageNotifier extends _$SendMessageNotifier {
   @override
   FutureOr<void> build() {}
 
-  Future<void> send(String receiverId, String body) async {
+  Future<void> send({
+    required String receiverId,
+    required String body,
+    String? conversationId,
+    String? replyToId,
+    List<File>? files,
+  }) async {
     state = const AsyncValue.loading();
     try {
       final currentUser = ref.read(currentUserProvider).value;
       if (currentUser == null) throw Exception('No user logged in');
-      await ref.read(messagingRepositoryProvider).sendMessage(
+      
+      final repo = ref.read(messagingRepositoryProvider);
+      List<Map<String, dynamic>>? attachments;
+      if (files != null && files.isNotEmpty) {
+        attachments = [];
+        final uploadPathId = conversationId ?? 'new_chat_${currentUser.id}';
+        
+        for (final file in files) {
+          final fileName = file.path.split('/').last;
+          final fileSize = await file.length();
+          final url = await repo.uploadAttachment(file, uploadPathId, fileName);
+          attachments.add({
+            'url': url,
+            'type': 'image',
+            'size': fileSize,
+            'name': fileName,
+          });
+        }
+      }
+
+      await repo.sendMessage(
         senderId: currentUser.id,
         receiverId: receiverId,
         body: body,
+        conversationId: conversationId,
+        replyToId: replyToId,
+        attachments: attachments,
       );
       state = const AsyncValue.data(null);
     } catch (e, st) {
@@ -35,15 +65,38 @@ class SendMessageNotifier extends _$SendMessageNotifier {
     }
   }
 
-  Future<void> sendGroupMessage(String conversationId, String body) async {
+  Future<void> sendGroupMessage({
+    required String conversationId,
+    required String body,
+    List<File>? files,
+  }) async {
     state = const AsyncValue.loading();
     try {
       final currentUser = ref.read(currentUserProvider).value;
       if (currentUser == null) throw Exception('No user logged in');
-      await ref.read(messagingRepositoryProvider).sendMessage(
+      
+      final repo = ref.read(messagingRepositoryProvider);
+      List<Map<String, dynamic>>? attachments;
+      if (files != null && files.isNotEmpty) {
+        attachments = [];
+        for (final file in files) {
+          final fileName = file.path.split('/').last;
+          final fileSize = await file.length();
+          final url = await repo.uploadAttachment(file, conversationId, fileName);
+          attachments.add({
+            'url': url,
+            'type': 'image',
+            'size': fileSize,
+            'name': fileName,
+          });
+        }
+      }
+
+      await repo.sendMessage(
         senderId: currentUser.id,
         conversationId: conversationId,
         body: body,
+        attachments: attachments,
       );
       state = const AsyncValue.data(null);
     } catch (e, st) {

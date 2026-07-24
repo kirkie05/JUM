@@ -288,7 +288,7 @@ final groupsListProvider =
 typedef GroupsListRef =
     AutoDisposeFutureProviderRef<List<Map<String, dynamic>>>;
 String _$createPostNotifierHash() =>
-    r'71ea91a295a5074a43b78ae6b94f8a44743759b3';
+    r'673cdb4d298ffdf76c7040a9ee2fdca4df546a64';
 
 /// See also [CreatePostNotifier].
 @ProviderFor(CreatePostNotifier)

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -84,7 +85,7 @@ class ConversationScreen extends ConsumerWidget {
                 // Proactively mark unread messages as read
                 for (final msg in messages) {
                   if (msg.receiverId == currentUserId && msg.readAt == null) {
-                    ref.read(messagingRepositoryProvider).markRead(msg.id);
+                    ref.read(messagingRepositoryProvider).markRead(msg.id, currentUserId);
                   }
                 }
 
@@ -93,9 +94,31 @@ class ConversationScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16.0),
                   itemCount: reversedMessages.length,
                   itemBuilder: (context, index) {
+                    final msg = reversedMessages[index];
                     return MessageBubble(
-                      message: reversedMessages[index],
+                      message: msg,
                       currentUserId: currentUserId,
+                      onLongPress: msg.isFromMe(currentUserId) ? () {
+                        showModalBottomSheet(
+                          context: context,
+                          builder: (context) {
+                            return SafeArea(
+                              child: Wrap(
+                                children: [
+                                  ListTile(
+                                    leading: const Icon(Icons.delete),
+                                    title: const Text('Delete Message'),
+                                    onTap: () {
+                                      Navigator.pop(context);
+                                      ref.read(messagingRepositoryProvider).deleteMessage(msg.id, forEveryone: true);
+                                    },
+                                  ),
+                                ],
+                              ),
+                            );
+                          }
+                        );
+                      } : null,
                     );
                   },
                 );
@@ -105,8 +128,12 @@ class ConversationScreen extends ConsumerWidget {
             ),
           ),
           ChatInputBar(
-            onSend: (body) {
-              ref.read(sendMessageNotifierProvider.notifier).send(peerId, body);
+            onSend: (body, attachments) {
+              ref.read(sendMessageNotifierProvider.notifier).send(
+                receiverId: peerId,
+                body: body,
+                files: attachments,
+              );
             },
           ),
         ],

@@ -40,7 +40,7 @@ final latestSermonProvider =
 
 typedef _$LatestSermon = AutoDisposeAsyncNotifier<SermonModel?>;
 String _$sermonPlayerNotifierHash() =>
-    r'c0cd7d7bbfc290fcf5d9a3670559c4bee68f8f8a';
+    r'a317225179e5b0b0de95e66afe33626284c3af27';
 
 /// See also [SermonPlayerNotifier].
 @ProviderFor(SermonPlayerNotifier)

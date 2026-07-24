@@ -272,7 +272,7 @@ class _GroupConversationProviderElement
 }
 
 String _$recentConversationsHash() =>
-    r'fe7244c213d5cb3de1f12276949f30a68f6a3465';
+    r'0ce94374bcf49a5ea195f8022d3ba28f75ba3fcf';
 
 /// See also [recentConversations].
 @ProviderFor(recentConversations)
@@ -309,7 +309,7 @@ final contactsProvider = AutoDisposeFutureProvider<List<UserModel>>.internal(
 // ignore: unused_element
 typedef ContactsRef = AutoDisposeFutureProviderRef<List<UserModel>>;
 String _$sendMessageNotifierHash() =>
-    r'c07950d99b332b4d7594a8b8d2a86c7e4dd0eb75';
+    r'0426f7b2f2ace815d8ddc9ac1c5bb0a071070161';
 
 /// See also [SendMessageNotifier].
 @ProviderFor(SendMessageNotifier)
